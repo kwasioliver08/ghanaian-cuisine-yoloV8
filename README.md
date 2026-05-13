@@ -14,7 +14,6 @@ A localized AI solution developed at **KNUST** to bridge the gap in food recogni
 *   **Mobile Frontend:** React Native(Planned integration.)
 *   **Web Frontend:** React/Next.js(Planned for Post-Training deployment)
 *   **Environment:** Python 3.10+
-*   
 
 ## 🎓 Academic Research
 *   **Institution:** Kwame Nkrumah University of Science and Technology (KNUST)
