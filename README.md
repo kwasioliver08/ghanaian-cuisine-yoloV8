@@ -1,0 +1,1 @@
+# ghanaian-cuisine-yoloV8
