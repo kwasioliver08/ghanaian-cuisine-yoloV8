@@ -18,3 +18,9 @@ A localized AI solution developed at **KNUST** to bridge the gap in food recogni
 ## 🎓 Academic Research
 *   **Institution:** Kwame Nkrumah University of Science and Technology (KNUST)
 *   **Supervisor:** Dr. Rose-Mary Owusuaa Mensah Gyening
+
+## 🗺️ Project Roadmap
+- [x] Phase 1: Hybrid Data Collection (852+ images)
+- [ ] Phase 2: Manual Data Annotation (Current Focus)
+- [ ] Phase 3: YOLOv8 Model Training & Validation
+- [ ] Phase 4: Deployment (Web & Mobile Integration)
