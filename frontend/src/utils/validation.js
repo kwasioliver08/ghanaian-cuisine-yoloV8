@@ -8,7 +8,7 @@
  * @returns {boolean} True if valid email
  */
 export const isValidEmail = (email) => {
-  return email.includes('@') && email.length > 5;
+  return email.includes("@") && email.length > 5;
 };
 
 /**
@@ -18,9 +18,12 @@ export const isValidEmail = (email) => {
  */
 export const isValidPassword = (password) => {
   if (password.length < 6) {
-    return { isValid: false, message: 'Password must be at least 6 characters' };
+    return {
+      isValid: false,
+      message: "Password must be at least 6 characters",
+    };
   }
-  return { isValid: true, message: 'Password is valid' };
+  return { isValid: true, message: "Password is valid" };
 };
 
 /**
