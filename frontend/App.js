@@ -1,65 +1,13 @@
 import React, { useState } from "react";
-import { StyleSheet, View, SafeAreaView, StatusBar, Text } from "react-native";
+import { StyleSheet, View, SafeAreaView, StatusBar } from "react-native";
 import SplashScreen from "./src/screens/SplashScreen";
 import AuthScreen from "./src/screens/AuthScreen";
 import OnboardingScreen from "./src/screens/OnboardingScreen";
-
-// Temporary fallback container while we build your main dashboard screen next
-const TemporaryCoreAppHub = ({ user, targets }) => (
-  <View
-    style={{
-      flex: 1,
-      justifyContent: "center",
-      alignItems: "center",
-      backgroundColor: "#F7FAFC",
-      padding: 20,
-    }}
-  >
-    <Text
-      style={{
-        fontSize: 22,
-        fontWeight: "700",
-        color: "#2D3748",
-        marginBottom: 10,
-      }}
-    >
-      Core App Dashboard Unlocked
-    </Text>
-    <Text style={{ fontSize: 14, color: "#4A5568", marginBottom: 30 }}>
-      Authenticated: {user?.fullName || "User"}
-    </Text>
-
-    <View
-      style={{
-        width: "100%",
-        backgroundColor: "#FFFFFF",
-        padding: 20,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: "#E2E8F0",
-      }}
-    >
-      <Text style={{ fontWeight: "700", color: "#2D3748", marginBottom: 12 }}>
-        Active Targets:
-      </Text>
-      <Text style={{ color: "#4A5568", marginVertical: 4 }}>
-        Calories: {targets?.calories} kcal
-      </Text>
-      <Text style={{ color: "#4A5568", marginVertical: 4 }}>
-        Carbohydrates: {targets?.carbs}g
-      </Text>
-      <Text style={{ color: "#4A5568", marginVertical: 4 }}>
-        Protein: {targets?.protein}g
-      </Text>
-      <Text style={{ color: "#4A5568", marginVertical: 4 }}>
-        Fats: {targets?.fats}g
-      </Text>
-    </View>
-  </View>
-);
+import HomeScreen from "./src/screens/HomeScreen";
+import MainTabNavigator from "./src/screens/MainTabNavigator";
 
 export default function App() {
-  const [currentViewState, setCurrentViewState] = useState("SPLASH"); // State machine tracker
+  const [currentViewState, setCurrentViewState] = useState("SPLASH"); // Global layout router state
   const [userProfile, setUserProfile] = useState(null);
   const [dailyTargets, setDailyTargets] = useState(null);
 
@@ -87,6 +35,13 @@ export default function App() {
     setCurrentViewState("CORE_APP");
   };
 
+  // 4. Handles user sign out to reset state variables and cycle safely back to AuthScreen
+  const handleLogout = () => {
+    setUserProfile(null);
+    setDailyTargets(null);
+    setCurrentViewState("AUTH");
+  };
+
   // Core Render Matrix Switch
   const renderViewLayer = () => {
     switch (currentViewState) {
@@ -102,8 +57,13 @@ export default function App() {
           />
         );
       case "CORE_APP":
+        // FIXED: Now correctly rendering your production HomeScreen component!
         return (
-          <TemporaryCoreAppHub user={userProfile} targets={dailyTargets} />
+          <MainTabNavigator
+            userProfile={userProfile}
+            dailyTargets={dailyTargets}
+            onLogout={handleLogout}
+          />
         );
       default:
         return <AuthScreen onAuthSuccess={handleAuthSuccess} />;
