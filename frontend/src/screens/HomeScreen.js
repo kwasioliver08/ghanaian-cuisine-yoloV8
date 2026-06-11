@@ -7,13 +7,24 @@ import {
   TouchableOpacity,
   Alert,
 } from "react-native";
+// Ensuring FontAwesome is destructured safely here
+import {
+  Feather,
+  MaterialCommunityIcons,
+  FontAwesome,
+} from "@expo/vector-icons";
 
 /**
  * HomeScreen Component
  * Displays a highly visual nutritional dashboard and historical dietary timeline log
  * Section 3.5 Functional Requirement: Nutritional Dashboard Visualization
  */
-const HomeScreen = ({ userProfile, dailyTargets, onLogout }) => {
+const HomeScreen = ({
+  userProfile,
+  dailyTargets,
+  onLogout,
+  onNavigateToScanner,
+}) => {
   // Pre-populating with mock data matching our exact 12 YOLOv8 classification targets
   const [loggedMeals, setLoggedMeals] = useState([
     {
@@ -36,7 +47,7 @@ const HomeScreen = ({ userProfile, dailyTargets, onLogout }) => {
       carbs: 133,
       protein: 30,
       fats: 23,
-      isAiDetected: true, // Highlights real-time YOLOv8 classification source
+      isAiDetected: true,
     },
     {
       id: "meal_3",
@@ -47,7 +58,7 @@ const HomeScreen = ({ userProfile, dailyTargets, onLogout }) => {
       carbs: 74,
       protein: 44,
       fats: 7,
-      isAiDetected: false, // Simulated manual logging alternative
+      isAiDetected: false,
     },
   ]);
 
@@ -65,27 +76,18 @@ const HomeScreen = ({ userProfile, dailyTargets, onLogout }) => {
     );
   }, [loggedMeals]);
 
-  /**
-   * Calculate remaining allowance for each macro metric
-   */
   const getRemainingAllowance = (key) => {
-    const target = dailyTargets ? dailyTargets[key] : 2000; // Safe runtime fallback thresholds
+    const target = dailyTargets ? dailyTargets[key] : 2000;
     const consumed = consumedNutrients[key] || 0;
     return Math.max(0, target - consumed);
   };
 
-  /**
-   * Calculate progress percentage for progress bar fills
-   */
   const getProgressPercentage = (key) => {
     const target = dailyTargets && dailyTargets[key] ? dailyTargets[key] : 2000;
     const consumed = consumedNutrients[key] || 0;
     return Math.min(100, (consumed / target) * 100);
   };
 
-  /**
-   * Render macro progress row item inside a clean dashboard grid layout
-   */
   const renderMacroRow = (label, key, color) => {
     const target = dailyTargets ? dailyTargets[key] : 0;
     const consumed = consumedNutrients[key];
@@ -159,95 +161,68 @@ const HomeScreen = ({ userProfile, dailyTargets, onLogout }) => {
         <View style={styles.timelineSection}>
           <Text style={styles.sectionTitle}>Dietary Timeline Log</Text>
 
-          {loggedMeals.length === 0 ? (
-            <View style={styles.emptyStateCard}>
-              <Text style={styles.emptyStateText}>No meals logged yet</Text>
-              <Text style={styles.emptyStateSubtext}>
-                Tap the camera icon below to snap and scan your food plate using
-                computer vision.
-              </Text>
-            </View>
-          ) : (
-            loggedMeals.map((meal) => (
-              <View key={meal.id} style={styles.mealLogCard}>
-                <View style={styles.mealCardHeader}>
-                  <View>
-                    <Text style={styles.mealCategoryTitle}>{meal.type}</Text>
-                    <Text style={styles.mealTimeText}>{meal.time}</Text>
-                  </View>
-                  <Text style={styles.mealCalorieTag}>
-                    +{meal.calories} kcal
+          {loggedMeals.map((meal) => (
+            <View key={meal.id} style={styles.mealLogCard}>
+              <View style={styles.mealCardHeader}>
+                <View>
+                  <Text style={styles.mealCategoryTitle}>{meal.type}</Text>
+                  <Text style={styles.mealTimeText}>{meal.time}</Text>
+                </View>
+                <Text style={styles.mealCalorieTag}>+{meal.calories} kcal</Text>
+              </View>
+
+              <Text style={styles.mealNameText}>{meal.name}</Text>
+
+              <View style={styles.mealPillGroupRow}>
+                <View
+                  style={[styles.macroPill, { backgroundColor: "#EBF8FF" }]}
+                >
+                  <Text style={[styles.macroPillText, { color: "#2B6CB0" }]}>
+                    Carbs: {meal.carbs}g
+                  </Text>
+                </View>
+                <View
+                  style={[styles.macroPill, { backgroundColor: "#E6FFFA" }]}
+                >
+                  <Text style={[styles.macroPillText, { color: "#234E52" }]}>
+                    Protein: {meal.protein}g
+                  </Text>
+                </View>
+                <View
+                  style={[styles.macroPill, { backgroundColor: "#FFFAF0" }]}
+                >
+                  <Text style={[styles.macroPillText, { color: "#7B341E" }]}>
+                    Fats: {meal.fats}g
                   </Text>
                 </View>
 
-                <Text style={styles.mealNameText}>{meal.name}</Text>
-
-                <View style={styles.mealPillGroupRow}>
-                  <View
-                    style={[styles.macroPill, { backgroundColor: "#EBF8FF" }]}
-                  >
-                    <Text style={[styles.macroPillText, { color: "#2B6CB0" }]}>
-                      Carbs: {meal.carbs}g
-                    </Text>
+                {meal.isAiDetected && (
+                  <View style={styles.aiDetectedBadge}>
+                    <Text style={styles.aiBadgeText}>YOLOv8 AI</Text>
                   </View>
-                  <View
-                    style={[styles.macroPill, { backgroundColor: "#E6FFFA" }]}
-                  >
-                    <Text style={[styles.macroPillText, { color: "#234E52" }]}>
-                      Protein: {meal.protein}g
-                    </Text>
-                  </View>
-                  <View
-                    style={[styles.macroPill, { backgroundColor: "#FFFAF0" }]}
-                  >
-                    <Text style={[styles.macroPillText, { color: "#7B341E" }]}>
-                      Fats: {meal.fats}g
-                    </Text>
-                  </View>
-
-                  {meal.isAiDetected && (
-                    <View style={styles.aiDetectedBadge}>
-                      <Text style={styles.aiBadgeText}>YOLOv8 AI</Text>
-                    </View>
-                  )}
-                </View>
+                )}
               </View>
-            ))
-          )}
+            </View>
+          ))}
         </View>
 
         {/* Session Log Out Actions */}
         <View style={styles.logoutActionContainer}>
-          <TouchableOpacity
-            style={styles.signOutButton}
-            onPress={() => {
-              Alert.alert(
-                "Sign Out",
-                "Are you sure you want to end your active session?",
-                [
-                  { text: "Cancel", style: "cancel" },
-                  { text: "Sign Out", onPress: onLogout, style: "destructive" },
-                ],
-              );
-            }}
-          >
+          <TouchableOpacity style={styles.signOutButton} onPress={onLogout}>
             <Text style={styles.signOutButtonText}>Sign Out Account</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
 
-      {/* Floating Action Button (FAB) for AI Vision Viewfinder */}
+      {/* Upgraded Floating Action Button (FAB) with Vector Icon */}
+      {/* Upgraded Floating Action Button (FAB) with Custom Lens Vector */}
       <TouchableOpacity
         style={styles.floatingCameraButton}
         activeOpacity={0.85}
-        onPress={() =>
-          Alert.alert(
-            "AI Vision Scanner",
-            "Initializing local camera permissions...",
-          )
-        }
+        onPress={onNavigateToScanner}
       >
-        <Text style={styles.cameraIconText}>📷</Text>
+        {/* Swapped to matching material iris lens icon */}
+        <MaterialCommunityIcons name="camera" size={28} color="#FFFFFF" />
       </TouchableOpacity>
     </View>
   );
@@ -262,7 +237,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 110, // Clear floating bounds so contents are fully accessible
+    paddingBottom: 110,
   },
   headerSection: {
     paddingHorizontal: 20,
@@ -446,24 +421,6 @@ const styles = StyleSheet.create({
     color: "#4A5568",
     letterSpacing: 0.5,
   },
-  emptyStateCard: {
-    backgroundColor: "#EDF2F7",
-    borderRadius: 10,
-    padding: 24,
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  emptyStateText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#4A5568",
-    marginBottom: 4,
-  },
-  emptyStateSubtext: {
-    fontSize: 12,
-    color: "#718096",
-    textAlign: "center",
-  },
   logoutActionContainer: {
     paddingHorizontal: 20,
     marginTop: 40,
@@ -488,20 +445,17 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 28,
     right: 24,
-    backgroundColor: "#1A202C",
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    backgroundColor: "#2D3748", // Matches your custom Slate Gray palette perfectly
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 5 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  cameraIconText: {
-    fontSize: 26,
+    shadowRadius: 6,
+    elevation: 5,
   },
 });
 

@@ -4,6 +4,7 @@ import SplashScreen from "./src/screens/SplashScreen";
 import AuthScreen from "./src/screens/AuthScreen";
 import OnboardingScreen from "./src/screens/OnboardingScreen";
 import HomeScreen from "./src/screens/HomeScreen";
+import MainTabNavigator from "./src/screens/MainTabNavigator";
 
 export default function App() {
   const [currentViewState, setCurrentViewState] = useState("SPLASH"); // Global layout router state
@@ -58,7 +59,7 @@ export default function App() {
       case "CORE_APP":
         // FIXED: Now correctly rendering your production HomeScreen component!
         return (
-          <HomeScreen
+          <MainTabNavigator
             userProfile={userProfile}
             dailyTargets={dailyTargets}
             onLogout={handleLogout}
