@@ -122,9 +122,20 @@ const ScannerScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.headerSection}>
+        <View style={styles.scannerBadge}>
+          <Text style={styles.scannerBadgeText}>PLATE INTELLIGENCE</Text>
+        </View>
         <Text style={styles.screenTitle}>AI Vision Viewfinder</Text>
         <Text style={styles.screenSubtitle}>
           Capture your plate for real-time item segmentation
+        </Text>
+      </View>
+
+      <View style={styles.introCard}>
+        <Text style={styles.introTitle}>Scan a meal in one tap.</Text>
+        <Text style={styles.introText}>
+          Use the camera or your gallery, then let the model detect plate items
+          and overlay clean bounding boxes.
         </Text>
       </View>
 
@@ -249,55 +260,88 @@ const ScannerScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F7FAFC",
+    backgroundColor: "transparent",
     paddingHorizontal: 20,
   },
   headerSection: {
-    paddingTop: 30,
-    paddingBottom: 20,
+    paddingTop: 24,
+    paddingBottom: 16,
+  },
+  scannerBadge: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: "rgba(15, 23, 42, 0.08)",
+    marginBottom: 10,
+  },
+  scannerBadgeText: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: "#334155",
+    letterSpacing: 1,
   },
   screenTitle: {
-    fontSize: 24,
+    fontSize: 27,
     fontWeight: "900",
-    color: "#1A202C",
-    letterSpacing: -0.5,
+    color: "#1F2937",
+    letterSpacing: -0.7,
   },
   screenSubtitle: {
     fontSize: 13,
-    color: "#718096",
+    color: "#6B7280",
     fontWeight: "500",
     marginTop: 4,
   },
   previewBoxContainer: {
     width: "100%",
     height: CANVAS_SIZE,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
+    backgroundColor: "rgba(255, 251, 247, 0.96)",
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: "rgba(231, 224, 216, 0.95)",
     overflow: "hidden",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.02,
-    shadowRadius: 10,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.05,
+    shadowRadius: 18,
+    elevation: 4,
+  },
+  introCard: {
+    backgroundColor: "rgba(255, 255, 255, 0.72)",
+    borderWidth: 1,
+    borderColor: "rgba(231, 229, 223, 0.9)",
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 14,
+  },
+  introTitle: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: "#0F172A",
+    marginBottom: 6,
+  },
+  introText: {
+    fontSize: 12,
+    lineHeight: 18,
+    color: "#64748B",
   },
   emptyPreviewState: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 30,
+    padding: 32,
   },
   emptyStateText: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: "700",
-    color: "#4A5568",
+    color: "#374151",
     marginTop: 14,
     marginBottom: 6,
   },
   emptyStateSubtext: {
     fontSize: 12,
-    color: "#718096",
+    color: "#6B7280",
     textAlign: "center",
     lineHeight: 18,
   },
@@ -312,7 +356,7 @@ const styles = StyleSheet.create({
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(26, 32, 44, 0.85)",
+    backgroundColor: "rgba(31, 41, 55, 0.84)",
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
@@ -327,49 +371,49 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     gap: 12,
-    marginTop: 20,
+    marginTop: 18,
     width: "100%",
   },
   mediaButton: {
     flex: 1,
     flexDirection: "row",
     height: 46,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 10,
+    backgroundColor: "rgba(255, 251, 247, 0.96)",
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#CBD5E0",
+    borderColor: "#E7E0D8",
     justifyContent: "center",
     alignItems: "center",
     gap: 8,
   },
   mediaButtonText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "600",
-    color: "#2D3748",
+    color: "#374151",
   },
   processModelButton: {
     height: 50,
-    backgroundColor: "#2D3748",
-    borderRadius: 10,
+    backgroundColor: "#1F2937",
+    borderRadius: 14,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 24,
+    marginTop: 20,
     width: "100%",
   },
   processModelButtonText: {
     color: "#FFFFFF",
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "700",
   },
   clearButton: {
     paddingVertical: 12,
     alignItems: "center",
-    marginTop: 8,
+    marginTop: 6,
   },
   clearButtonText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "600",
-    color: "#E53E3E",
+    color: "#B4534B",
   },
 });
 

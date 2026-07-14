@@ -126,6 +126,9 @@ const HomeScreen = ({
       >
         {/* Profile Welcome Section */}
         <View style={styles.headerSection}>
+          <View style={styles.heroBadge}>
+            <Text style={styles.heroBadgeText}>TODAY</Text>
+          </View>
           <Text style={styles.welcomeText}>
             Welcome back, {userProfile?.fullName?.split(" ")[0] || "User"}
           </Text>
@@ -147,19 +150,36 @@ const HomeScreen = ({
             <Text style={styles.bigCalorieLabel}>Calories Remaining</Text>
           </View>
 
+          <View style={styles.heroStatsRow}>
+            <View style={styles.heroStatCard}>
+              <Text style={styles.heroStatValue}>{consumedNutrients.calories}</Text>
+              <Text style={styles.heroStatLabel}>Consumed</Text>
+            </View>
+            <View style={styles.heroStatCard}>
+              <Text style={styles.heroStatValue}>
+                {dailyTargets?.calories || 2000}
+              </Text>
+              <Text style={styles.heroStatLabel}>Goal</Text>
+            </View>
+            <View style={styles.heroStatCard}>
+              <Text style={styles.heroStatValue}>{loggedMeals.length}</Text>
+              <Text style={styles.heroStatLabel}>Meals</Text>
+            </View>
+          </View>
+
           <View style={styles.dividerLine} />
 
           <Text style={styles.dashboardSectionTitle}>Macro Allocations</Text>
           <View style={styles.macroListGrid}>
-            {renderMacroRow("Carbohydrates (55%)", "carbs", "#3182CE")}
-            {renderMacroRow("Protein (20%)", "protein", "#38A169")}
-            {renderMacroRow("Fats (25%)", "fats", "#DD6B20")}
+            {renderMacroRow("Carbohydrates (55%)", "carbs", "#DD6B20")}
+            {renderMacroRow("Protein (20%)", "protein", "#3182CE")}
+            {renderMacroRow("Fats (25%)", "fats", "#E53E3E")}
           </View>
         </View>
 
         {/* Historical Dietary Timeline Section */}
         <View style={styles.timelineSection}>
-          <Text style={styles.sectionTitle}>Dietary Timeline Log</Text>
+          <Text style={styles.sectionTitle}>Meal Timeline</Text>
 
           {loggedMeals.map((meal) => (
             <View key={meal.id} style={styles.mealLogCard}>
@@ -175,23 +195,23 @@ const HomeScreen = ({
 
               <View style={styles.mealPillGroupRow}>
                 <View
-                  style={[styles.macroPill, { backgroundColor: "#EBF8FF" }]}
+                    style={[styles.macroPill, { backgroundColor: "rgba(221, 107, 32, 0.10)" }]}
                 >
-                  <Text style={[styles.macroPillText, { color: "#2B6CB0" }]}>
+                    <Text style={[styles.macroPillText, { color: "#C05621" }]}>
                     Carbs: {meal.carbs}g
                   </Text>
                 </View>
                 <View
-                  style={[styles.macroPill, { backgroundColor: "#E6FFFA" }]}
+                    style={[styles.macroPill, { backgroundColor: "rgba(49, 130, 206, 0.10)" }]}
                 >
-                  <Text style={[styles.macroPillText, { color: "#234E52" }]}>
+                    <Text style={[styles.macroPillText, { color: "#2B6CB0" }]}>
                     Protein: {meal.protein}g
                   </Text>
                 </View>
                 <View
-                  style={[styles.macroPill, { backgroundColor: "#FFFAF0" }]}
+                    style={[styles.macroPill, { backgroundColor: "rgba(229, 62, 62, 0.10)" }]}
                 >
-                  <Text style={[styles.macroPillText, { color: "#7B341E" }]}>
+                    <Text style={[styles.macroPillText, { color: "#C53030" }]}>
                     Fats: {meal.fats}g
                   </Text>
                 </View>
@@ -231,57 +251,73 @@ const HomeScreen = ({
 const styles = StyleSheet.create({
   rootContainer: {
     flex: 1,
-    backgroundColor: "#F7FAFC",
+    backgroundColor: "transparent",
   },
   container: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 110,
+    paddingBottom: 120,
   },
   headerSection: {
     paddingHorizontal: 20,
-    paddingTop: 30,
-    paddingBottom: 16,
+    paddingTop: 26,
+    paddingBottom: 20,
+  },
+  heroBadge: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: "rgba(37, 99, 235, 0.12)",
+    borderWidth: 1,
+    borderColor: "#334155",
+    marginBottom: 12,
+  },
+  heroBadgeText: {
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 1.1,
+    color: "#334155B",
   },
   welcomeText: {
-    fontSize: 26,
+    fontSize: 29,
     fontWeight: "900",
-    color: "#1A202C",
-    letterSpacing: -0.5,
+    color: "#1F2937",
+    letterSpacing: -0.7,
   },
   dateText: {
-    fontSize: 14,
-    color: "#718096",
+    fontSize: 13,
+    color: "#475569",
     fontWeight: "600",
-    marginTop: 4,
+    marginTop: 6,
   },
   dashboardCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.98)",
+    borderRadius: 24,
+    padding: 22,
     marginHorizontal: 20,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: "rgba(219, 234, 254, 0.90)",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.07,
+    shadowRadius: 22,
+    elevation: 5,
   },
   caloriesDisplayGroup: {
     alignItems: "center",
     marginVertical: 12,
   },
   bigCalorieNumber: {
-    fontSize: 54,
+    fontSize: 58,
     fontWeight: "900",
-    color: "#1A202C",
-    letterSpacing: -1,
+    color: "#1F2937",
+    letterSpacing: -1.2,
   },
   bigCalorieLabel: {
-    fontSize: 12,
-    color: "#718096",
+    fontSize: 11,
+    color: "#475569",
     fontWeight: "700",
     textTransform: "uppercase",
     letterSpacing: 1,
@@ -289,14 +325,43 @@ const styles = StyleSheet.create({
   },
   dividerLine: {
     height: 1,
-    backgroundColor: "#E2E8F0",
+    backgroundColor: "#E7E0D8",
     width: "100%",
-    marginVertical: 18,
+    marginVertical: 16,
+  },
+  heroStatsRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 4,
+  },
+  heroStatCard: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: "#DBEAFE",
+    alignItems: "center",
+  },
+  heroStatValue: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#0F172A",
+    letterSpacing: -0.4,
+  },
+  heroStatLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#475569",
+    marginTop: 4,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
   },
   dashboardSectionTitle: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: "700",
-    color: "#4A5568",
+    color: "#6B7280",
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 14,
@@ -314,22 +379,22 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   macroRowLabel: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "700",
-    color: "#4A5568",
+    color: "#374151",
   },
   macroRowValue: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "600",
-    color: "#1A202C",
+    color: "#1F2937",
   },
   macroRemainingText: {
-    color: "#A0AEC0",
+    color: "#9CA3AF",
     fontWeight: "500",
   },
   progressBarContainer: {
     height: 8,
-    backgroundColor: "#EDF2F7",
+    backgroundColor: "#E2E8F0",
     borderRadius: 4,
     overflow: "hidden",
   },
@@ -339,27 +404,27 @@ const styles = StyleSheet.create({
   },
   timelineSection: {
     paddingHorizontal: 20,
-    marginTop: 32,
+    marginTop: 24,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "800",
-    color: "#1A202C",
+    color: "#1F2937",
     marginBottom: 16,
     letterSpacing: -0.3,
   },
   mealLogCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
+    backgroundColor: "rgba(255, 255, 255, 0.98)",
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
-    padding: 16,
-    marginBottom: 14,
+    borderColor: "rgba(219, 234, 254, 0.90)",
+    padding: 18,
+    marginBottom: 12,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.02,
-    shadowRadius: 6,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.04,
+    shadowRadius: 14,
+    elevation: 2,
   },
   mealCardHeader: {
     flexDirection: "row",
@@ -367,58 +432,58 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
   },
   mealCategoryTitle: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "700",
-    color: "#A0AEC0",
+    color: "#64748B",
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   mealTimeText: {
-    fontSize: 12,
-    color: "#718096",
+    fontSize: 11,
+    color: "#475569",
     fontWeight: "500",
     marginTop: 2,
   },
   mealCalorieTag: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "700",
-    color: "#1A202C",
+    color: "#0F172A",
   },
   mealNameText: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: "600",
-    color: "#2D3748",
-    marginTop: 8,
-    marginBottom: 14,
+    color: "#1F2937",
+    marginTop: 10,
+    marginBottom: 12,
   },
   mealPillGroupRow: {
     flexDirection: "row",
     alignItems: "center",
     flexWrap: "wrap",
-    gap: 6,
+    gap: 8,
   },
   macroPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
   },
   macroPillText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "700",
   },
   aiDetectedBadge: {
-    backgroundColor: "#EDF2F7",
+    backgroundColor: "rgba(37, 99, 235, 0.10)",
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#CBD5E0",
+    borderColor: "rgba(37, 99, 235, 0.16)",
     marginLeft: "auto",
   },
   aiBadgeText: {
     fontSize: 10,
     fontWeight: "700",
-    color: "#4A5568",
+    color: "#1D4ED8",
     letterSpacing: 0.5,
   },
   logoutActionContainer: {
@@ -427,25 +492,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   signOutButton: {
-    paddingVertical: 12,
+    paddingVertical: 13,
     paddingHorizontal: 24,
-    borderRadius: 8,
-    backgroundColor: "#FFF5F5",
+    borderRadius: 12,
+    backgroundColor: "rgba(15, 23, 42, 0.06)",
     borderWidth: 1,
-    borderColor: "#FEB2B2",
+    borderColor: "rgba(15, 23, 42, 0.14)",
     width: "100%",
     alignItems: "center",
   },
   signOutButtonText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "600",
-    color: "#C53030",
+    color: "#0F172A",
   },
   floatingCameraButton: {
     position: "absolute",
     bottom: 28,
     right: 24,
-    backgroundColor: "#2D3748", // Matches your custom Slate Gray palette perfectly
+    backgroundColor: "#0F172A",
     width: 56,
     height: 56,
     borderRadius: 28,
@@ -453,9 +518,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 5,
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    elevation: 7,
   },
 });
 

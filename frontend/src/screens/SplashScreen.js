@@ -20,24 +20,25 @@ const SplashScreen = ({ onSplashComplete }) => {
 
   return (
     <View style={styles.container}>
-      {/* Background */}
-      <View style={styles.backgroundGradient} />
+      <View style={styles.brandHalo} />
+      <View style={styles.brandHaloSecondary} />
 
       {/* Main Content */}
       <View style={styles.content}>
-        {/* Logo / Branding Section */}
         <View style={styles.brandingSection}>
-          <Text style={styles.titleText}>GHANAIAN CUISINE</Text>
-          <Text style={styles.subtitleText}>Food Detection & Nutrition</Text>
+          <View style={styles.brandChip}>
+            <Text style={styles.brandChipText}>LOCAL AI FOOD LOG</Text>
+          </View>
+          <Text style={styles.titleText}>Ghanaian Cuisine</Text>
+          <Text style={styles.subtitleText}>Scan meals, calculate targets, and track the day.</Text>
         </View>
 
-        {/* Loading Indicator */}
-        <View style={styles.loadingSection}>
-          <ActivityIndicator size="large" color="#2D3748" />
-          <Text style={styles.loadingText}>Initializing...</Text>
+        <View style={styles.loadingCard}>
+          <ActivityIndicator size="large" color="#0F172A" />
+          <Text style={styles.loadingText}>Initializing your workspace</Text>
+          <Text style={styles.loadingSubtext}>Preparing nutrition tracking and plate intelligence.</Text>
         </View>
 
-        {/* Footer Branding */}
         <View style={styles.footerSection}>
           <Text style={styles.versionText}>v1.0.0</Text>
         </View>
@@ -49,43 +50,84 @@ const SplashScreen = ({ onSplashComplete }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F7FAFC",
+    backgroundColor: "#F7F3ED",
     justifyContent: "center",
     alignItems: "center",
   },
-  backgroundGradient: {
+  brandHalo: {
     position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "#F7FAFC",
+    width: 260,
+    height: 260,
+    borderRadius: 260,
+    top: -40,
+    right: -70,
+    backgroundColor: "rgba(37, 99, 235, 0.24)",
+  },
+  brandHaloSecondary: {
+    position: "absolute",
+    width: 220,
+    height: 220,
+    borderRadius: 220,
+    bottom: 40,
+    left: -70,
+    backgroundColor: "rgba(16, 185, 129, 0.18)",
   },
   content: {
     flex: 1,
     width: "100%",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 60,
+    paddingVertical: 64,
     paddingHorizontal: 20,
   },
   brandingSection: {
     alignItems: "center",
-    marginTop: 120, // Pushed down slightly since top text is gone
+    marginTop: 120,
+  },
+  brandChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: "rgba(255, 255, 255, 0.86)",
+    borderWidth: 1,
+    borderColor: "rgba(219, 234, 254, 0.95)",
+    marginBottom: 18,
+  },
+  brandChipText: {
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 1.2,
+    color: "#2563EB",
   },
   titleText: {
-    fontSize: 36,
-    fontWeight: "800",
-    color: "#2D3748",
-    marginBottom: 8,
+    fontSize: 34,
+    fontWeight: "900",
+    color: "#0F172A",
+    marginBottom: 10,
     textAlign: "center",
-    letterSpacing: 1,
+    letterSpacing: -0.8,
   },
   subtitleText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "500",
-    color: "#4A5568",
-    marginTop: 8,
+    color: "#475569",
+    marginTop: 4,
+    textAlign: "center",
+    maxWidth: 260,
+  },
+  loadingCard: {
+    backgroundColor: "rgba(255, 255, 255, 0.90)",
+    borderWidth: 1,
+    borderColor: "rgba(219, 234, 254, 0.95)",
+    borderRadius: 24,
+    paddingVertical: 22,
+    paddingHorizontal: 24,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.06,
+    shadowRadius: 20,
+    elevation: 4,
   },
   loadingSection: {
     alignItems: "center",
@@ -93,9 +135,17 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 14,
-    color: "#4A5568",
-    marginTop: 16,
-    fontWeight: "500",
+    color: "#0F172A",
+    marginTop: 14,
+    fontWeight: "700",
+  },
+  loadingSubtext: {
+    fontSize: 12,
+    color: "#475569",
+    marginTop: 6,
+    textAlign: "center",
+    lineHeight: 18,
+    maxWidth: 220,
   },
   footerSection: {
     alignItems: "center",
@@ -103,8 +153,8 @@ const styles = StyleSheet.create({
   },
   versionText: {
     fontSize: 11,
-    color: "#A0AEC0",
-    marginTop: 6,
+    color: "#9CA3AF",
+    marginTop: 10,
   },
 });
 
