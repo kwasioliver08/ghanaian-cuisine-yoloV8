@@ -16,11 +16,6 @@ import {
   passwordsMatch,
 } from "../utils/validation";
 
-/**
- * AuthScreen Component
- * Handles user authentication with Sign In and Sign Up workflows
- * Enforces strict input validation and passes authenticated user data to App.js
- */
 const AuthScreen = ({ onAuthSuccess }) => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [fullName, setFullName] = useState("");
@@ -30,63 +25,33 @@ const AuthScreen = ({ onAuthSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
-  /**
-   * Validate Sign Up form
-   */
   const validateSignUp = () => {
     const newErrors = {};
-
-    if (!fullName.trim()) {
-      newErrors.fullName = "Full name is required";
-    }
-
-    if (!isValidEmail(email)) {
+    if (!fullName.trim()) newErrors.fullName = "Full name is required";
+    if (!isValidEmail(email))
       newErrors.email = "Please enter a valid email (must contain @)";
-    }
-
     const passwordValidation = isValidPassword(password);
-    if (!passwordValidation.isValid) {
+    if (!passwordValidation.isValid)
       newErrors.password = passwordValidation.message;
-    }
-
-    if (!passwordsMatch(password, confirmPassword)) {
+    if (!passwordsMatch(password, confirmPassword))
       newErrors.confirmPassword = "Passwords must match";
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  /**
-   * Validate Sign In form
-   */
   const validateSignIn = () => {
     const newErrors = {};
-
-    if (!isValidEmail(email)) {
-      newErrors.email = "Please enter a valid email";
-    }
-
-    if (password.length < 6) {
-      newErrors.password = "Password is required";
-    }
-
+    if (!isValidEmail(email)) newErrors.email = "Please enter a valid email";
+    if (password.length < 6) newErrors.password = "Password is required";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  /**
-   * Handle Sign Up submission
-   */
   const handleSignUp = async () => {
     if (!validateSignUp()) return;
-
     setLoading(true);
-
     try {
-      // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000));
-
       const mockUser = {
         id: "user_" + Date.now(),
         fullName: fullName.trim(),
@@ -95,10 +60,7 @@ const AuthScreen = ({ onAuthSuccess }) => {
         isNewUser: true,
         createdAt: new Date().toISOString(),
       };
-
-      if (onAuthSuccess) {
-        onAuthSuccess(mockUser);
-      }
+      if (onAuthSuccess) onAuthSuccess(mockUser);
     } catch (error) {
       Alert.alert(
         "Sign Up Error",
@@ -109,18 +71,11 @@ const AuthScreen = ({ onAuthSuccess }) => {
     }
   };
 
-  /**
-   * Handle Sign In submission
-   */
   const handleSignIn = async () => {
     if (!validateSignIn()) return;
-
     setLoading(true);
-
     try {
-      // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000));
-
       const mockUser = {
         id: "user_" + Date.now(),
         fullName: "Mock User",
@@ -129,10 +84,7 @@ const AuthScreen = ({ onAuthSuccess }) => {
         isNewUser: false,
         createdAt: new Date().toISOString(),
       };
-
-      if (onAuthSuccess) {
-        onAuthSuccess(mockUser);
-      }
+      if (onAuthSuccess) onAuthSuccess(mockUser);
     } catch (error) {
       Alert.alert(
         "Sign In Error",
@@ -148,22 +100,39 @@ const AuthScreen = ({ onAuthSuccess }) => {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
+      style={styles.keyboardContainer}
     >
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={styles.headerSection}>
-          <Text style={styles.headerTitle}>Ghanaian Cuisine</Text>
-          <Text style={styles.headerSubtitle}>
-            {isSignUp ? "Create Your Account" : "Welcome Back"}
-          </Text>
-        </View>
+        <View style={styles.authCard}>
+          {/* Header */}
+          <View style={styles.headerSection}>
+            <View style={styles.heroBadge}>
+              <Text style={styles.heroBadgeText}>SCAN + TRACK</Text>
+            </View>
+            <Text style={styles.headerTitle}>Ghanaian Cuisine</Text>
+            <Text style={styles.headerSubtitle}>
+              {isSignUp
+                ? "Create your account to unlock meal scanning and daily targets."
+                : "Sign in to continue tracking meals and nutrition."}
+            </Text>
+            <View style={styles.featureRow}>
+              <View style={styles.featureChip}>
+                <Text style={styles.featureChipText}>Meal scan</Text>
+              </View>
+              <View style={styles.featureChip}>
+                <Text style={styles.featureChipText}>Macro goals</Text>
+              </View>
+              <View style={styles.featureChip}>
+                <Text style={styles.featureChipText}>Daily log</Text>
+              </View>
+            </View>
+          </View>
 
-        {/* Form Container */}
-        <View style={styles.formContainer}>
+          {/* Form Container */}
+          <View style={styles.formContainer}>
           {/* Full Name Field (Sign Up only) */}
           {isSignUp && (
             <>
@@ -176,9 +145,7 @@ const AuthScreen = ({ onAuthSuccess }) => {
                   value={fullName}
                   onChangeText={(text) => {
                     setFullName(text);
-                    if (errors.fullName) {
-                      setErrors({ ...errors, fullName: null });
-                    }
+                    if (errors.fullName) setErrors({ ...errors, fullName: null });
                   }}
                   editable={!loading}
                 />
@@ -200,18 +167,14 @@ const AuthScreen = ({ onAuthSuccess }) => {
                 value={email}
                 onChangeText={(text) => {
                   setEmail(text);
-                  if (errors.email) {
-                    setErrors({ ...errors, email: null });
-                  }
+                  if (errors.email) setErrors({ ...errors, email: null });
                 }}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 editable={!loading}
               />
             </View>
-            {errors.email && (
-              <Text style={styles.errorText}>{errors.email}</Text>
-            )}
+            {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
           </>
 
           {/* Password Field */}
@@ -225,9 +188,7 @@ const AuthScreen = ({ onAuthSuccess }) => {
                 value={password}
                 onChangeText={(text) => {
                   setPassword(text);
-                  if (errors.password) {
-                    setErrors({ ...errors, password: null });
-                  }
+                  if (errors.password) setErrors({ ...errors, password: null });
                 }}
                 secureTextEntry
                 editable={!loading}
@@ -253,9 +214,8 @@ const AuthScreen = ({ onAuthSuccess }) => {
                   value={confirmPassword}
                   onChangeText={(text) => {
                     setConfirmPassword(text);
-                    if (errors.confirmPassword) {
+                    if (errors.confirmPassword)
                       setErrors({ ...errors, confirmPassword: null });
-                    }
                   }}
                   secureTextEntry
                   editable={!loading}
@@ -269,15 +229,16 @@ const AuthScreen = ({ onAuthSuccess }) => {
 
           {/* Submit Button */}
           <TouchableOpacity
-            style={[
-              styles.submitButton,
-              loading && styles.submitButtonDisabled,
-            ]}
+            style={[styles.submitButton, loading && styles.submitButtonDisabled]}
             onPress={handleSubmit}
             disabled={loading}
           >
             <Text style={styles.submitButtonText}>
-              {loading ? "Loading..." : isSignUp ? "Create Account" : "Sign In"}
+              {loading
+                ? "Loading..."
+                : isSignUp
+                  ? "Create Account"
+                  : "Sign In"}
             </Text>
           </TouchableOpacity>
 
@@ -300,6 +261,7 @@ const AuthScreen = ({ onAuthSuccess }) => {
               </Text>
             </TouchableOpacity>
           </View>
+          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -307,42 +269,87 @@ const AuthScreen = ({ onAuthSuccess }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
+  keyboardContainer: {
     flex: 1,
-    backgroundColor: "#F7FAFC",
   },
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 20,
-    paddingVertical: 40,
-    paddingBottom: 60, // Gives structural padding when keyboard rises
-    justifyContent: "center", // Centers form elements beautifully
+    paddingVertical: 24,
+    paddingBottom: 32,
+    justifyContent: "center",
+  },
+  authCard: {
+    backgroundColor: "rgba(255, 255, 255, 0.97)",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(219, 234, 254, 0.95)",
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.05,
+    shadowRadius: 18,
+    elevation: 4,
   },
   headerSection: {
-    marginBottom: 40,
-    marginTop: 20,
+    marginBottom: 24,
+    marginTop: 6,
+  },
+  heroBadge: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: "rgba(15, 23, 42, 0.08)",
+    marginBottom: 12,
+  },
+  heroBadgeText: {
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 1,
+    color: "#0F172A",
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 29,
     fontWeight: "800",
-    color: "#2D3748",
+    color: "#1F2937",
     marginBottom: 8,
   },
   headerSubtitle: {
-    fontSize: 16,
-    color: "#4A5568",
+    fontSize: 14,
+    color: "#475569",
     fontWeight: "500",
+    lineHeight: 20,
+  },
+  featureRow: {
+    flexDirection: "row",
+    gap: 8,
+    flexWrap: "wrap",
+    marginTop: 14,
+  },
+  featureChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#DBEAFE",
+  },
+  featureChipText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#475569",
   },
   formContainer: {
     flex: 1,
   },
   inputGroup: {
-    marginBottom: 16,
+    marginBottom: 14,
   },
   label: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "600",
-    color: "#2D3748",
+    color: "#475569",
     marginBottom: 8,
     textTransform: "uppercase",
     letterSpacing: 0.5,
@@ -350,12 +357,12 @@ const styles = StyleSheet.create({
   input: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
-    backgroundColor: "#FFFFFF",
+    borderColor: "#DBEAFE",
+    backgroundColor: "rgba(255, 255, 255, 0.98)",
     fontSize: 15,
-    color: "#2D3748",
+    color: "#1F2937",
   },
   inputError: {
     borderColor: "#F56565",
@@ -370,21 +377,21 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     paddingVertical: 14,
-    borderRadius: 8,
-    backgroundColor: "#2D3748",
+    borderRadius: 12,
+    backgroundColor: "#0F172A",
     alignItems: "center",
     marginTop: 24,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    elevation: 4,
   },
   submitButtonDisabled: {
     opacity: 0.6,
   },
   submitButtonText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "600",
     color: "#FFFFFF",
   },
@@ -395,13 +402,13 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   toggleText: {
-    fontSize: 14,
-    color: "#4A5568",
+    fontSize: 13,
+    color: "#475569",
     fontWeight: "400",
   },
   toggleLink: {
-    fontSize: 14,
-    color: "#2D3748",
+    fontSize: 13,
+    color: "#0F172A",
     fontWeight: "700",
   },
 });

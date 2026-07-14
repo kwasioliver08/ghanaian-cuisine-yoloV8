@@ -1,48 +1,66 @@
 import React, { useState } from "react";
-import { StyleSheet, View, SafeAreaView, StatusBar } from "react-native";
+import { StyleSheet, View, StatusBar } from "react-native";
 import SplashScreen from "./src/screens/SplashScreen";
 import AuthScreen from "./src/screens/AuthScreen";
 import OnboardingScreen from "./src/screens/OnboardingScreen";
-import HomeScreen from "./src/screens/HomeScreen";
 import MainTabNavigator from "./src/screens/MainTabNavigator";
+import AppBackground from "./src/components/AppBackground"; // Root wrapper!
 
 export default function App() {
-  const [currentViewState, setCurrentViewState] = useState("SPLASH"); // Global layout router state
+  const [currentViewState, setCurrentViewState] = useState("SPLASH");
   const [userProfile, setUserProfile] = useState(null);
   const [dailyTargets, setDailyTargets] = useState(null);
+  const [onboardingDetails, setOnboardingDetails] = useState(null);
+  const [scannerResetKey, setScannerResetKey] = useState(0);
 
-  // 1. Handles transition out of the initial splash timer loop
   const handleSplashComplete = () => {
     setCurrentViewState("AUTH");
   };
 
-  // 2. Intercepts the user object from AuthScreen and determines the logical route
   const handleAuthSuccess = (userPayload) => {
-    setUserProfile(userPayload);
-
+    setOnboardingDetails(null);
+    setUserProfile({
+      ...userPayload,
+      joinedDate:
+        userPayload.joinedDate ||
+        new Date().toLocaleDateString("en-US", {
+          month: "long",
+          year: "numeric",
+        }),
+    });
     if (userPayload.isNewUser) {
       setCurrentViewState("ONBOARDING");
     } else {
-      // Returning users bypass setup and load their saved metrics profile directly
       setDailyTargets({ calories: 2150, carbs: 295, protein: 108, fats: 60 });
       setCurrentViewState("CORE_APP");
     }
   };
 
-  // 3. Collects computed metabolic data arrays from setup and unlocks the workspace
-  const handleOnboardingComplete = (computedTargets) => {
+  const handleOnboardingComplete = ({ computedTargets, details }) => {
     setDailyTargets(computedTargets);
+    setOnboardingDetails(details);
     setCurrentViewState("CORE_APP");
   };
 
-  // 4. Handles user sign out to reset state variables and cycle safely back to AuthScreen
   const handleLogout = () => {
     setUserProfile(null);
     setDailyTargets(null);
+    setOnboardingDetails(null);
     setCurrentViewState("AUTH");
   };
 
-  // Core Render Matrix Switch
+  const handleEditMacroAllocation = () => {
+    setCurrentViewState("ONBOARDING");
+  };
+
+  const handleCancelMacroAllocationEdit = () => {
+    setCurrentViewState("CORE_APP");
+  };
+
+  const handleClearScanIndexes = () => {
+    setScannerResetKey((currentKey) => currentKey + 1);
+  };
+
   const renderViewLayer = () => {
     switch (currentViewState) {
       case "SPLASH":
@@ -53,16 +71,23 @@ export default function App() {
         return (
           <OnboardingScreen
             onOnboardingComplete={handleOnboardingComplete}
+            onCancel={handleCancelMacroAllocationEdit}
             userProfile={userProfile}
+            currentTargets={dailyTargets}
+            currentDetails={onboardingDetails}
+            isEditingMacroAllocation={Boolean(dailyTargets)}
           />
         );
       case "CORE_APP":
-        // FIXED: Now correctly rendering your production HomeScreen component!
         return (
           <MainTabNavigator
             userProfile={userProfile}
             dailyTargets={dailyTargets}
+            onboardingDetails={onboardingDetails}
             onLogout={handleLogout}
+            scannerResetKey={scannerResetKey}
+            onEditMacroAllocation={handleEditMacroAllocation}
+            onClearScanIndexes={handleClearScanIndexes}
           />
         );
       default:
@@ -71,19 +96,28 @@ export default function App() {
   };
 
   return (
-    <SafeAreaView style={styles.appWrapper}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F7FAFC" />
-      <View style={styles.mainCanvas}>{renderViewLayer()}</View>
-    </SafeAreaView>
+    // Putting the background at the top-level of the hierarchy resolves all layout blocking!
+    <AppBackground>
+      {/* status bar translucent tells android not to reserve solid white blocks */}
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="transparent"
+        translucent={true}
+      />
+      <View style={styles.appWrapper}>
+        <View style={styles.mainCanvas}>{renderViewLayer()}</View>
+      </View>
+    </AppBackground>
   );
 }
 
 const styles = StyleSheet.create({
   appWrapper: {
     flex: 1,
-    backgroundColor: "#F7FAFC",
+    backgroundColor: "transparent",
   },
   mainCanvas: {
     flex: 1,
+    backgroundColor: "transparent",
   },
 });
