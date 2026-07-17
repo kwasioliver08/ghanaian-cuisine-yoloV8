@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -6,18 +6,20 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  RefreshControl, // Added for pull-to-refresh execution
+  ActivityIndicator, // Smooth indicator during loading states
 } from "react-native";
-// Ensuring FontAwesome is destructured safely here
 import {
   Feather,
   MaterialCommunityIcons,
   FontAwesome,
 } from "@expo/vector-icons";
+// --- IMPORT THE LIVE API HELPER ---
+import { api } from "../utils/api";
 
 /**
  * HomeScreen Component
- * Displays a highly visual nutritional dashboard and historical dietary timeline log
- * Section 3.5 Functional Requirement: Nutritional Dashboard Visualization
+ * Displays a nutritional dashboard and a historical dietary timeline log pulled from DB
  */
 const HomeScreen = ({
   userProfile,
@@ -25,51 +27,51 @@ const HomeScreen = ({
   onLogout,
   onNavigateToScanner,
 }) => {
-  // Pre-populating with mock data matching our exact 12 YOLOv8 classification targets
-  const [loggedMeals, setLoggedMeals] = useState([
-    {
-      id: "meal_1",
-      type: "Breakfast",
-      time: "07:30 AM",
-      name: "Hausa Koko & Bread",
-      calories: 420,
-      carbs: 86,
-      protein: 11,
-      fats: 3,
-      isAiDetected: true,
-    },
-    {
-      id: "meal_2",
-      type: "Lunch",
-      time: "01:15 PM",
-      name: "Waakye with Fried Plantain & Beans",
-      calories: 890,
-      carbs: 133,
-      protein: 30,
-      fats: 23,
-      isAiDetected: true,
-    },
-    {
-      id: "meal_3",
-      type: "Dinner",
-      time: "06:45 PM",
-      name: "Banku with Grilled Fish",
-      calories: 540,
-      carbs: 74,
-      protein: 44,
-      fats: 7,
-      isAiDetected: false,
-    },
-  ]);
+  // Swapped out hardcoded mock metrics array for a clean database log hook state tracker
+  const [loggedMeals, setLoggedMeals] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Dynamically aggregate metrics from all meals consumed today
+  /**
+   * Fetch daily logged items from backend PostgreSQL database
+   */
+  const fetchDailyLogs = async (showLoader = true) => {
+    if (showLoader) setLoading(true);
+    try {
+      // Endpoint call to gather today's specific logged food records
+      const mealsData = await api.getDailyMeals(userProfile.id);
+      setLoggedMeals(mealsData || []);
+    } catch (error) {
+      console.error("Failed to load daily logs:", error);
+      Alert.alert(
+        "Data Sync Error",
+        "Could not load today's nutritional entries from the server.",
+      );
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  // Run initial fetch operation once when dashboard tree structure mounts
+  useEffect(() => {
+    fetchDailyLogs(true);
+  }, [userProfile.id]);
+
+  // Pull-to-refresh execution configuration function handler
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchDailyLogs(false);
+  };
+
+  // Dynamically aggregate metrics from all live database meals consumed today
   const consumedNutrients = useMemo(() => {
     return loggedMeals.reduce(
       (totals, meal) => {
-        totals.calories += meal.calories;
-        totals.carbs += meal.carbs;
-        totals.protein += meal.protein;
-        totals.fats += meal.fats;
+        totals.calories += Math.round(meal.calories || 0);
+        totals.carbs += Math.round(meal.carbs || 0);
+        totals.protein += Math.round(meal.protein || 0);
+        totals.fats += Math.round(meal.fats || 0);
         return totals;
       },
       { calories: 0, carbs: 0, protein: 0, fats: 0 },
@@ -119,129 +121,181 @@ const HomeScreen = ({
 
   return (
     <View style={styles.rootContainer}>
-      <ScrollView
-        style={styles.container}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {/* Profile Welcome Section */}
-        <View style={styles.headerSection}>
-          <View style={styles.heroBadge}>
-            <Text style={styles.heroBadgeText}>TODAY</Text>
-          </View>
-          <Text style={styles.welcomeText}>
-            Welcome back, {userProfile?.fullName?.split(" ")[0] || "User"}
-          </Text>
-          <Text style={styles.dateText}>
-            {new Date().toLocaleDateString("en-US", {
-              weekday: "long",
-              month: "short",
-              day: "numeric",
-            })}
-          </Text>
+      {loading ? (
+        <View style={styles.centeredLoader}>
+          <ActivityIndicator size="large" color="#0F172A" />
+          <Text style={styles.loaderText}>Syncing metrics dashboard...</Text>
         </View>
-
-        {/* Nutritional Dashboard Summary Card */}
-        <View style={styles.dashboardCard}>
-          <View style={styles.caloriesDisplayGroup}>
-            <Text style={styles.bigCalorieNumber}>
-              {getRemainingAllowance("calories")}
+      ) : (
+        <ScrollView
+          style={styles.container}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              color="#0F172A"
+            />
+          }
+        >
+          {/* Profile Welcome Section */}
+          <View style={styles.headerSection}>
+            <View style={styles.heroBadge}>
+              <Text style={styles.heroBadgeText}>TODAY</Text>
+            </View>
+            <Text style={styles.welcomeText}>
+              Welcome back, {userProfile?.fullName?.split(" ")[0] || "User"}
             </Text>
-            <Text style={styles.bigCalorieLabel}>Calories Remaining</Text>
+            <Text style={styles.dateText}>
+              {new Date().toLocaleDateString("en-US", {
+                weekday: "long",
+                month: "short",
+                day: "numeric",
+              })}
+            </Text>
           </View>
 
-          <View style={styles.heroStatsRow}>
-            <View style={styles.heroStatCard}>
-              <Text style={styles.heroStatValue}>{consumedNutrients.calories}</Text>
-              <Text style={styles.heroStatLabel}>Consumed</Text>
-            </View>
-            <View style={styles.heroStatCard}>
-              <Text style={styles.heroStatValue}>
-                {dailyTargets?.calories || 2000}
+          {/* Nutritional Dashboard Summary Card */}
+          <View style={styles.dashboardCard}>
+            <View style={styles.caloriesDisplayGroup}>
+              <Text style={styles.bigCalorieNumber}>
+                {getRemainingAllowance("calories")}
               </Text>
-              <Text style={styles.heroStatLabel}>Goal</Text>
+              <Text style={styles.bigCalorieLabel}>Calories Remaining</Text>
             </View>
-            <View style={styles.heroStatCard}>
-              <Text style={styles.heroStatValue}>{loggedMeals.length}</Text>
-              <Text style={styles.heroStatLabel}>Meals</Text>
-            </View>
-          </View>
 
-          <View style={styles.dividerLine} />
-
-          <Text style={styles.dashboardSectionTitle}>Macro Allocations</Text>
-          <View style={styles.macroListGrid}>
-            {renderMacroRow("Carbohydrates (55%)", "carbs", "#DD6B20")}
-            {renderMacroRow("Protein (20%)", "protein", "#3182CE")}
-            {renderMacroRow("Fats (25%)", "fats", "#E53E3E")}
-          </View>
-        </View>
-
-        {/* Historical Dietary Timeline Section */}
-        <View style={styles.timelineSection}>
-          <Text style={styles.sectionTitle}>Meal Timeline</Text>
-
-          {loggedMeals.map((meal) => (
-            <View key={meal.id} style={styles.mealLogCard}>
-              <View style={styles.mealCardHeader}>
-                <View>
-                  <Text style={styles.mealCategoryTitle}>{meal.type}</Text>
-                  <Text style={styles.mealTimeText}>{meal.time}</Text>
-                </View>
-                <Text style={styles.mealCalorieTag}>+{meal.calories} kcal</Text>
+            <View style={styles.heroStatsRow}>
+              <View style={styles.heroStatCard}>
+                <Text style={styles.heroStatValue}>
+                  {consumedNutrients.calories}
+                </Text>
+                <Text style={styles.heroStatLabel}>Consumed</Text>
               </View>
+              <View style={styles.heroStatCard}>
+                <Text style={styles.heroStatValue}>
+                  {dailyTargets?.calories || 2000}
+                </Text>
+                <Text style={styles.heroStatLabel}>Goal</Text>
+              </View>
+              <View style={styles.heroStatCard}>
+                <Text style={styles.heroStatValue}>{loggedMeals.length}</Text>
+                <Text style={styles.heroStatLabel}>Meals</Text>
+              </View>
+            </View>
 
-              <Text style={styles.mealNameText}>{meal.name}</Text>
+            <View style={styles.dividerLine} />
 
-              <View style={styles.mealPillGroupRow}>
-                <View
-                    style={[styles.macroPill, { backgroundColor: "rgba(221, 107, 32, 0.10)" }]}
-                >
-                    <Text style={[styles.macroPillText, { color: "#C05621" }]}>
-                    Carbs: {meal.carbs}g
-                  </Text>
-                </View>
-                <View
-                    style={[styles.macroPill, { backgroundColor: "rgba(49, 130, 206, 0.10)" }]}
-                >
-                    <Text style={[styles.macroPillText, { color: "#2B6CB0" }]}>
-                    Protein: {meal.protein}g
-                  </Text>
-                </View>
-                <View
-                    style={[styles.macroPill, { backgroundColor: "rgba(229, 62, 62, 0.10)" }]}
-                >
-                    <Text style={[styles.macroPillText, { color: "#C53030" }]}>
-                    Fats: {meal.fats}g
-                  </Text>
-                </View>
+            <Text style={styles.dashboardSectionTitle}>Macro Allocations</Text>
+            <View style={styles.macroListGrid}>
+              {renderMacroRow("Carbohydrates (55%)", "carbs", "#DD6B20")}
+              {renderMacroRow("Protein (20%)", "protein", "#3182CE")}
+              {renderMacroRow("Fats (25%)", "fats", "#E53E3E")}
+            </View>
+          </View>
 
-                {meal.isAiDetected && (
-                  <View style={styles.aiDetectedBadge}>
-                    <Text style={styles.aiBadgeText}>YOLOv8 AI</Text>
+          {/* Historical Dietary Timeline Section */}
+          <View style={styles.timelineSection}>
+            <Text style={styles.sectionTitle}>Meal Timeline</Text>
+
+            {loggedMeals.length === 0 ? (
+              <View style={styles.emptyLogsCard}>
+                <MaterialCommunityIcons
+                  name="silverware-fork-knife"
+                  size={32}
+                  color="#94A3B8"
+                />
+                <Text style={styles.emptyLogsText}>
+                  No meals tracked today yet.
+                </Text>
+                <Text style={styles.emptyLogsSubtext}>
+                  Tap the camera button below to snap or search breakfast,
+                  lunch, or dinner entry points!
+                </Text>
+              </View>
+            ) : (
+              loggedMeals.map((meal) => (
+                <View key={meal.id || meal._id} style={styles.mealLogCard}>
+                  <View style={styles.mealCardHeader}>
+                    <View>
+                      <Text style={styles.mealCategoryTitle}>
+                        {meal.type || "Meal Entry"}
+                      </Text>
+                      <Text style={styles.mealTimeText}>
+                        {meal.time || "Just now"}
+                      </Text>
+                    </View>
+                    <Text style={styles.mealCalorieTag}>
+                      +{Math.round(meal.calories)} kcal
+                    </Text>
                   </View>
-                )}
-              </View>
-            </View>
-          ))}
-        </View>
 
-        {/* Session Log Out Actions */}
-        <View style={styles.logoutActionContainer}>
-          <TouchableOpacity style={styles.signOutButton} onPress={onLogout}>
-            <Text style={styles.signOutButtonText}>Sign Out Account</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+                  <Text style={styles.mealNameText}>{meal.name}</Text>
 
-      {/* Upgraded Floating Action Button (FAB) with Vector Icon */}
-      {/* Upgraded Floating Action Button (FAB) with Custom Lens Vector */}
+                  <View style={styles.mealPillGroupRow}>
+                    <View
+                      style={[
+                        styles.macroPill,
+                        { backgroundColor: "rgba(221, 107, 32, 0.10)" },
+                      ]}
+                    >
+                      <Text
+                        style={[styles.macroPillText, { color: "#C05621" }]}
+                      >
+                        Carbs: {Math.round(meal.carbs)}g
+                      </Text>
+                    </View>
+                    <View
+                      style={[
+                        styles.macroPill,
+                        { backgroundColor: "rgba(49, 130, 206, 0.10)" },
+                      ]}
+                    >
+                      <Text
+                        style={[styles.macroPillText, { color: "#2B6CB0" }]}
+                      >
+                        Protein: {Math.round(meal.protein)}g
+                      </Text>
+                    </View>
+                    <View
+                      style={[
+                        styles.macroPill,
+                        { backgroundColor: "rgba(229, 62, 62, 0.10)" },
+                      ]}
+                    >
+                      <Text
+                        style={[styles.macroPillText, { color: "#C53030" }]}
+                      >
+                        Fats: {Math.round(meal.fats)}g
+                      </Text>
+                    </View>
+
+                    {meal.isAiDetected && (
+                      <View style={styles.aiDetectedBadge}>
+                        <Text style={styles.aiBadgeText}>YOLOv8 AI</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              ))
+            )}
+          </View>
+
+          {/* Session Log Out Actions */}
+          <View style={styles.logoutActionContainer}>
+            <TouchableOpacity style={styles.signOutButton} onPress={onLogout}>
+              <Text style={styles.signOutButtonText}>Sign Out Account</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      )}
+
+      {/* Camera Floating Action Button */}
       <TouchableOpacity
         style={styles.floatingCameraButton}
         activeOpacity={0.85}
         onPress={onNavigateToScanner}
       >
-        {/* Swapped to matching material iris lens icon */}
         <MaterialCommunityIcons name="camera" size={28} color="#FFFFFF" />
       </TouchableOpacity>
     </View>
@@ -258,6 +312,18 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 120,
+  },
+  centeredLoader: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 40,
+  },
+  loaderText: {
+    marginTop: 14,
+    fontSize: 14,
+    color: "#475569",
+    fontWeight: "600",
   },
   headerSection: {
     paddingHorizontal: 20,
@@ -412,6 +478,28 @@ const styles = StyleSheet.create({
     color: "#1F2937",
     marginBottom: 16,
     letterSpacing: -0.3,
+  },
+  emptyLogsCard: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    padding: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyLogsText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#475569",
+    marginTop: 10,
+  },
+  emptyLogsSubtext: {
+    fontSize: 12,
+    color: "#94A3B8",
+    textAlign: "center",
+    marginTop: 6,
+    lineHeight: 18,
   },
   mealLogCard: {
     backgroundColor: "rgba(255, 255, 255, 0.98)",

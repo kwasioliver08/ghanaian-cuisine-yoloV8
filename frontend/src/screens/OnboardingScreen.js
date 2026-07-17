@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,10 +8,11 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from "react-native";
 import { calculateDailyTargets } from "../utils/nutritionCalculations";
 import { isValidNumericInput } from "../utils/validation";
+// --- IMPORT THE LIVE API HELPER ---
+import { api } from "../utils/api";
 
 /**
  * OnboardingScreen Component
@@ -25,13 +26,34 @@ const OnboardingScreen = ({
   currentTargets,
   currentDetails,
   isEditingMacroAllocation,
+  showNotification, // 🔑 Destructured global toast notification channel trigger
 }) => {
-  const [gender, setGender] = useState(currentDetails?.gender || null); // 'Male' or 'Female'
-  const [age, setAge] = useState(currentDetails?.age ? String(currentDetails.age) : "");
-  const [weight, setWeight] = useState(currentDetails?.weight ? String(currentDetails.weight) : ""); // kg
-  const [height, setHeight] = useState(currentDetails?.height ? String(currentDetails.height) : ""); // cm
+  // 🔑 INITIALIZATIONS: Pre-populate states instantly if parent states exist
+  const [gender, setGender] = useState(currentDetails?.gender || null);
+  const [age, setAge] = useState(
+    currentDetails?.age ? String(currentDetails.age) : "",
+  );
+  const [weight, setWeight] = useState(
+    currentDetails?.weight ? String(currentDetails.weight) : "",
+  );
+  const [height, setHeight] = useState(
+    currentDetails?.height ? String(currentDetails.height) : "",
+  );
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+
+  /**
+   * 🔑 MOUNT TRIGGER EFFECT HANDSHAKE:
+   * Dynamically tracks incoming parameters if a user switches contexts to edit mode midway
+   */
+  useEffect(() => {
+    if (currentDetails) {
+      if (currentDetails.gender) setGender(currentDetails.gender);
+      if (currentDetails.age) setAge(String(currentDetails.age));
+      if (currentDetails.weight) setWeight(String(currentDetails.weight));
+      if (currentDetails.height) setHeight(String(currentDetails.height));
+    }
+  }, [currentDetails]);
 
   /**
    * Calculate daily targets in real-time for an on-screen preview card
@@ -88,10 +110,7 @@ const OnboardingScreen = ({
     setLoading(true);
 
     try {
-      // Simulate rapid internal processing delay
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      // Build the final optimized macro payload structure
+      // 1. Calculate the final targets using your West African nutrition split logic
       const dailyTargets = calculateDailyTargets(
         parseFloat(weight),
         parseInt(height, 10),
@@ -99,6 +118,18 @@ const OnboardingScreen = ({
         gender,
       );
 
+      // 2. Fire the database call to POST /api/user/targets
+      // Type casting matches PostgreSQL expectations strictly
+      await api.saveTargets(
+        userProfile.id,
+        gender.toLowerCase(), // Backend expects lower_case string ('male' / 'female')
+        parseInt(age, 10), // Cast string to standard integer
+        parseFloat(weight), // Cast string to standard float
+        parseInt(height, 10), // Cast string to standard integer
+        dailyTargets,
+      );
+
+      // 3. Update the global state inside App.js
       if (onOnboardingComplete) {
         onOnboardingComplete({
           computedTargets: dailyTargets,
@@ -111,10 +142,13 @@ const OnboardingScreen = ({
         });
       }
     } catch (error) {
-      Alert.alert(
-        "Setup Error",
-        error.message || "Failed to complete metric configuration",
-      );
+      // 🔑 FIXED: Replaced native prompt layout entirely with unified custom toast engine alerts
+      if (showNotification) {
+        showNotification(
+          error.message || "Failed to complete metric configuration",
+          "error",
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -153,12 +187,16 @@ const OnboardingScreen = ({
             <View style={styles.currentTargetsRow}>
               <View style={styles.currentTargetChip}>
                 <Text style={styles.currentTargetLabel}>Gender</Text>
-                <Text style={styles.currentTargetValue}>{currentDetails.gender || "Not set"}</Text>
+                <Text style={styles.currentTargetValue}>
+                  {currentDetails.gender || "Not set"}
+                </Text>
               </View>
               <View style={styles.currentTargetChip}>
                 <Text style={styles.currentTargetLabel}>Age</Text>
                 <Text style={styles.currentTargetValue}>
-                  {currentDetails.age ? `${currentDetails.age} years` : "Not set"}
+                  {currentDetails.age
+                    ? `${currentDetails.age} years`
+                    : "Not set"}
                 </Text>
               </View>
             </View>
@@ -166,13 +204,17 @@ const OnboardingScreen = ({
               <View style={styles.currentTargetChip}>
                 <Text style={styles.currentTargetLabel}>Weight</Text>
                 <Text style={styles.currentTargetValue}>
-                  {currentDetails.weight ? `${currentDetails.weight} kg` : "Not set"}
+                  {currentDetails.weight
+                    ? `${currentDetails.weight} kg`
+                    : "Not set"}
                 </Text>
               </View>
               <View style={styles.currentTargetChip}>
                 <Text style={styles.currentTargetLabel}>Height</Text>
                 <Text style={styles.currentTargetValue}>
-                  {currentDetails.height ? `${currentDetails.height} cm` : "Not set"}
+                  {currentDetails.height
+                    ? `${currentDetails.height} cm`
+                    : "Not set"}
                 </Text>
               </View>
             </View>

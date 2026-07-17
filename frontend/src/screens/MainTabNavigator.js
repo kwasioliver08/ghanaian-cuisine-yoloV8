@@ -35,7 +35,14 @@ const MainTabNavigator = ({
           />
         );
       case "SCANNER":
-        return <ScannerScreen key={scannerResetKey} />;
+        return (
+          // 🔑 FIXED: Forward userProfile and add a fallback redirect to the dashboard view
+          <ScannerScreen
+            key={scannerResetKey}
+            userProfile={userProfile}
+            onScanSuccess={() => setActiveTab("DASHBOARD")}
+          />
+        );
       case "PROFILE":
         return (
           <ProfileScreen

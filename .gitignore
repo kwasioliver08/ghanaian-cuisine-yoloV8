@@ -16,3 +16,12 @@ model_weights/*.pt
 backend/__pycache__/
 backend/*.pyc
 .DS_Store
+
+# Local Environment Secrets
+.env
+.env.local
+
+# Root Virtual Environment
+.venv/
+venv/
+.env

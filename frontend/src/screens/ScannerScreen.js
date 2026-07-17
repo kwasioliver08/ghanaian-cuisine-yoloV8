@@ -8,55 +8,28 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
-  Platform, // FIXED: Added missing Platform import
+  Platform,
 } from "react-native";
 import { FontAwesome, Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-// Importing SVG elements to draw custom vector overlays over our photo
 import Svg, { Rect, G, Text as SvgText } from "react-native-svg";
+// --- IMPORT THE LIVE API HELPER ---
+import { api } from "../utils/api";
 
 const { width } = Dimensions.get("window");
-const CANVAS_SIZE = width - 40; // The fixed square layout bounds for our preview window
+const CANVAS_SIZE = width - 40;
 
 /**
  * ScannerScreen Component
- * Handles photo ingestion and visually renders bounding box canvas overlays
- * Section 3.7 Technical Requirement: Computer Vision Visual Interface
+ * Handles photo ingestion and visually renders bounding box canvas overlays from FastAPI
  */
-const ScannerScreen = () => {
+const ScannerScreen = ({ userProfile, onScanSuccess }) => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [predictions, setPredictions] = useState([]); // Stores spatial coordinate arrays
-
-  /**
-   * Simulated YOLOv8 API response payload mapping localized food items.
-   * Coordinates are structured relative to our display frame size (CANVAS_SIZE).
-   */
-  const MOCK_YOLO_RESPONSE = [
-    {
-      class: "waakye",
-      confidence: 0.94,
-      box: {
-        x: CANVAS_SIZE * 0.12, // 12% from the left edge
-        y: CANVAS_SIZE * 0.2, // 20% from the top edge
-        w: CANVAS_SIZE * 0.55, // Width covering 55% of canvas
-        h: CANVAS_SIZE * 0.6, // Height covering 60% of canvas
-      },
-    },
-    {
-      class: "plantain",
-      confidence: 0.88,
-      box: {
-        x: CANVAS_SIZE * 0.65, // 65% from the left edge
-        y: CANVAS_SIZE * 0.35, // 35% from the top edge
-        w: CANVAS_SIZE * 0.28, // Width covering 28% of canvas
-        h: CANVAS_SIZE * 0.4, // Height covering 40% of canvas
-      },
-    },
-  ];
+  const [predictions, setPredictions] = useState([]);
 
   const handleCapturePhoto = async () => {
-    setPredictions([]); // Clear past model canvas boundaries
+    setPredictions([]);
     const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
 
     if (!permissionResult.granted) {
@@ -68,7 +41,7 @@ const ScannerScreen = () => {
     }
 
     const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ["images"], // FIXED: Updated deprecated code array syntax
+      mediaTypes: ["images"],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.8,
@@ -90,7 +63,7 @@ const ScannerScreen = () => {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"], // FIXED: Updated deprecated code array syntax
+      mediaTypes: ["images"],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.8,
@@ -102,16 +75,85 @@ const ScannerScreen = () => {
   };
 
   /**
-   * Triggers simulated AI inference execution, injecting bounding box coordinate nodes
+   * Fires multipart form-data to FastAPI backend and persists nutritional aggregations
    */
-  const handleProcessImage = () => {
+  const handleProcessImage = async () => {
+    if (!selectedImage) return;
     setIsProcessing(true);
 
-    setTimeout(() => {
+    try {
+      // 1. Post image binary stream up to /api/scan workspace route
+      const response = await api.uploadAndScanPlate(selectedImage);
+
+      if (response && response.predictions) {
+        setPredictions(response.predictions);
+
+        // 2. Map structural placeholders for local food estimation models
+        // When your YOLO model details change, your estimation matrices parse dynamically here:
+        let totalCalories = 0;
+        let totalCarbs = 0;
+        let totalProtein = 0;
+        let totalFats = 0;
+        let constructedNameList = [];
+
+        response.predictions.forEach((item) => {
+          constructedNameList.push(item.class.toUpperCase());
+          if (item.class.toLowerCase() === "waakye") {
+            totalCalories += 650;
+            totalCarbs += 95;
+            totalProtein += 22;
+            totalFats += 14;
+          } else if (item.class.toLowerCase() === "plantain") {
+            totalCalories += 240;
+            totalCarbs += 38;
+            totalProtein += 8;
+            totalFats += 9;
+          } else {
+            totalCalories += 300;
+            totalCarbs += 40;
+            totalProtein += 15;
+            totalFats += 5;
+          }
+        });
+
+        const unifiedMealName =
+          constructedNameList.join(" & ") || "Detected Ghanaian Plate";
+
+        // 3. Persist the detected meal into your PostgreSQL table ledger immediately
+        await api.logMeal(
+          userProfile?.id || "anonymous_user",
+          "AI Scan",
+          unifiedMealName,
+          totalCalories,
+          totalCarbs,
+          totalProtein,
+          totalFats,
+          true, // marks item as YOLOv8 AI sourced
+        );
+
+        Alert.alert(
+          "Analysis Complete",
+          `Logged: ${unifiedMealName}\nCalculated ~${totalCalories} kcal added to your timeline dashboard layout!`,
+          [
+            {
+              text: "Great",
+              onPress: () => {
+                if (onScanSuccess) onScanSuccess();
+              },
+            },
+          ],
+        );
+      }
+    } catch (error) {
+      console.error("Plate Scanning Error:", error);
+      Alert.alert(
+        "Scanning Error",
+        error.message ||
+          "Failed to establish validation handshake with YOLO API endpoint.",
+      );
+    } finally {
       setIsProcessing(false);
-      // Injecting our mock data matrix to overlay vector boxes on our photo frame
-      setPredictions(MOCK_YOLO_RESPONSE);
-    }, 2000);
+    }
   };
 
   const handleClearCanvas = () => {
@@ -163,10 +205,10 @@ const ScannerScreen = () => {
                       y={item.box.y}
                       width={item.box.w}
                       height={item.box.h}
-                      stroke="#38A169" // Emerald Green accent for confident detections
+                      stroke="#38A169"
                       strokeWidth="3"
-                      fill="rgba(56, 161, 105, 0.12)" // Semi-transparent overlay mask fill
-                      rx="6" // Softly rounded border corners
+                      fill="rgba(56, 161, 105, 0.12)"
+                      rx="6"
                     />
 
                     {/* 2. Metadata Identification Header Badge Text */}
@@ -194,7 +236,7 @@ const ScannerScreen = () => {
               <View style={styles.loadingOverlay}>
                 <ActivityIndicator size="large" color="#FFFFFF" />
                 <Text style={styles.loadingText}>
-                  Running Local YOLOv8 Inference...
+                  Querying Live FastAPI YOLOv8 Workspace...
                 </Text>
               </View>
             )}
@@ -308,7 +350,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   introCard: {
-    backgroundColor: "rgba(255, 255, 255, 0.72)",
+    backgroundColor: "rgba(255, 255, 272, 0.72)",
     borderWidth: 1,
     borderColor: "rgba(231, 229, 223, 0.9)",
     borderRadius: 18,

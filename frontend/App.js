@@ -5,6 +5,9 @@ import AuthScreen from "./src/screens/AuthScreen";
 import OnboardingScreen from "./src/screens/OnboardingScreen";
 import MainTabNavigator from "./src/screens/MainTabNavigator";
 import AppBackground from "./src/components/AppBackground"; // Root wrapper!
+// --- 🔑 IMPORT GLOBAL NOTIFICATION INFRASTRUCTURE ---
+import NotificationToast from "./src/components/NotificationToast";
+import { useNotification } from "./src/hooks/useNotification";
 
 export default function App() {
   const [currentViewState, setCurrentViewState] = useState("SPLASH");
@@ -13,12 +16,15 @@ export default function App() {
   const [onboardingDetails, setOnboardingDetails] = useState(null);
   const [scannerResetKey, setScannerResetKey] = useState(0);
 
+  // 🔑 INITIALIZE MASTER NOTIFICATION HOOK
+  const { notification, showNotification, hideNotification } =
+    useNotification();
+
   const handleSplashComplete = () => {
     setCurrentViewState("AUTH");
   };
 
   const handleAuthSuccess = (userPayload) => {
-    setOnboardingDetails(null);
     setUserProfile({
       ...userPayload,
       joinedDate:
@@ -28,11 +34,35 @@ export default function App() {
           year: "numeric",
         }),
     });
+
     if (userPayload.isNewUser) {
+      setOnboardingDetails(null);
+      setDailyTargets(null);
       setCurrentViewState("ONBOARDING");
     } else {
-      setDailyTargets({ calories: 2150, carbs: 295, protein: 108, fats: 60 });
+      const details = userPayload.onboardingDetails ||
+        userPayload.profile_details || {
+          gender: userPayload.gender || "Not set",
+          age: userPayload.age || null,
+          weight: userPayload.weight || null,
+          height: userPayload.height || null,
+        };
+
+      const targets = userPayload.dailyTargets ||
+        userPayload.computed_targets || {
+          calories: userPayload.target_calories || 2150,
+          carbs: userPayload.target_carbs || 295,
+          protein: userPayload.target_protein || 108,
+          fats: userPayload.target_fats || 60,
+        };
+
+      setOnboardingDetails(details);
+      setDailyTargets(targets);
       setCurrentViewState("CORE_APP");
+      showNotification(
+        "Welcome back, " + (userPayload.fullName || "User") + "!",
+        "success",
+      );
     }
   };
 
@@ -40,6 +70,10 @@ export default function App() {
     setDailyTargets(computedTargets);
     setOnboardingDetails(details);
     setCurrentViewState("CORE_APP");
+    showNotification(
+      "Nutritional profile synchronized successfully!",
+      "success",
+    );
   };
 
   const handleLogout = () => {
@@ -47,6 +81,7 @@ export default function App() {
     setDailyTargets(null);
     setOnboardingDetails(null);
     setCurrentViewState("AUTH");
+    showNotification("Signed out safely.", "info");
   };
 
   const handleEditMacroAllocation = () => {
@@ -66,16 +101,22 @@ export default function App() {
       case "SPLASH":
         return <SplashScreen onSplashComplete={handleSplashComplete} />;
       case "AUTH":
-        return <AuthScreen onAuthSuccess={handleAuthSuccess} />;
+        return (
+          <AuthScreen
+            onAuthSuccess={handleAuthSuccess}
+            showNotification={showNotification} // 🔑 Injecting global trigger
+          />
+        );
       case "ONBOARDING":
         return (
           <OnboardingScreen
             onOnboardingComplete={handleOnboardingComplete}
             onCancel={handleCancelMacroAllocationEdit}
             userProfile={userProfile}
-            currentTargets={dailyTargets}
+            currentTarget={dailyTargets}
             currentDetails={onboardingDetails}
             isEditingMacroAllocation={Boolean(dailyTargets)}
+            showNotification={showNotification} // 🔑 Injecting global trigger
           />
         );
       case "CORE_APP":
@@ -88,22 +129,30 @@ export default function App() {
             scannerResetKey={scannerResetKey}
             onEditMacroAllocation={handleEditMacroAllocation}
             onClearScanIndexes={handleClearScanIndexes}
+            showNotification={showNotification} // 🔑 Injecting global trigger
           />
         );
       default:
-        return <AuthScreen onAuthSuccess={handleAuthSuccess} />;
+        return (
+          <AuthScreen
+            onAuthSuccess={handleAuthSuccess}
+            showNotification={showNotification}
+          />
+        );
     }
   };
 
   return (
-    // Putting the background at the top-level of the hierarchy resolves all layout blocking!
     <AppBackground>
-      {/* status bar translucent tells android not to reserve solid white blocks */}
       <StatusBar
         barStyle="dark-content"
         backgroundColor="transparent"
         translucent={true}
       />
+
+      {/* 🔑 MASTER NOTIFICATION LAYER HOVER STACK */}
+      <NotificationToast {...notification} onClose={hideNotification} />
+
       <View style={styles.appWrapper}>
         <View style={styles.mainCanvas}>{renderViewLayer()}</View>
       </View>
