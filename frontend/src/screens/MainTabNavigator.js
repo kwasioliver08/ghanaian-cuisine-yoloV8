@@ -10,7 +10,7 @@ import {
   SafeAreaView,
   Platform,
 } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 const MainTabNavigator = ({
   userProfile,
@@ -23,6 +23,8 @@ const MainTabNavigator = ({
 }) => {
   const [activeTab, setActiveTab] = useState("DASHBOARD");
 
+  const isScannerActive = activeTab === "SCANNER";
+
   const renderTabContent = () => {
     switch (activeTab) {
       case "DASHBOARD":
@@ -32,11 +34,11 @@ const MainTabNavigator = ({
             dailyTargets={dailyTargets}
             onLogout={onLogout}
             onNavigateToScanner={() => setActiveTab("SCANNER")}
+            onNavigateToHistory={() => setActiveTab("PROFILE")}
           />
         );
       case "SCANNER":
         return (
-          // 🔑 FIXED: Forward userProfile and add a fallback redirect to the dashboard view
           <ScannerScreen
             key={scannerResetKey}
             userProfile={userProfile}
@@ -66,77 +68,135 @@ const MainTabNavigator = ({
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={[styles.container, isScannerActive && styles.containerTranslucent]}
+    >
       {/* Target Render Layer Window */}
       <View style={styles.contentCanvas}>{renderTabContent()}</View>
 
-      {/* Bottom Floating Navigation Tab Bar */}
-      <View style={styles.tabBarContainer}>
-        {/* Dashboard Navigation Trigger */}
+      {/* Bottom Dynamic Navigation Bar */}
+      <View
+        style={[
+          styles.tabBarContainer,
+          isScannerActive && styles.tabBarTranslucent,
+        ]}
+      >
+        {/* Home Tab */}
         <TouchableOpacity
           style={styles.tabItem}
           onPress={() => setActiveTab("DASHBOARD")}
-          activeOpacity={0.7}
+          activeOpacity={0.8}
         >
-          <Feather
-            name="home"
-            size={22}
-            color={activeTab === "DASHBOARD" ? "#0F172A" : "#94A3B8"}
-          />
-          <Text
-            style={[
-              styles.tabLabel,
-              activeTab === "DASHBOARD" && styles.activeTabLabel,
-            ]}
-          >
-            Home
-          </Text>
+          {activeTab === "DASHBOARD" ? (
+            <View style={styles.activeTabGroup}>
+              <View style={styles.activeCircleBadge}>
+                <MaterialCommunityIcons name="home" size={20} color="#FFFFFF" />
+              </View>
+              <Text
+                style={[
+                  styles.activeTabLabel,
+                  isScannerActive && styles.activeTabLabelTranslucent,
+                ]}
+              >
+                Home
+              </Text>
+            </View>
+          ) : (
+            <>
+              <MaterialCommunityIcons
+                name="home-outline"
+                size={22}
+                color={isScannerActive ? "#FFFFFF" : "#6B5A4E"}
+              />
+              <Text
+                style={[
+                  styles.tabLabel,
+                  isScannerActive && styles.tabLabelTranslucent,
+                ]}
+              >
+                Home
+              </Text>
+            </>
+          )}
         </TouchableOpacity>
 
-        {/* AI Vision Scanner Navigation Trigger (Pill Style) */}
+        {/* Scan Plate Tab */}
         <TouchableOpacity
           style={styles.tabItem}
           onPress={() => setActiveTab("SCANNER")}
-          activeOpacity={0.7}
+          activeOpacity={0.8}
         >
-          <View
-            style={[
-              styles.scannerCenterPill,
-              activeTab === "SCANNER" && styles.scannerCenterPillActive,
-            ]}
-          >
-            <Feather name="camera" size={18} color="#FFFFFF" />
-          </View>
-          <Text
-            style={[
-              styles.tabLabel,
-              styles.scannerLabelAdjustment,
-              activeTab === "SCANNER" && styles.activeTabLabel,
-            ]}
-          >
-            Scan Plate
-          </Text>
+          {activeTab === "SCANNER" ? (
+            <View style={styles.activeTabGroup}>
+              <View style={styles.activeCircleBadge}>
+                <MaterialCommunityIcons
+                  name="camera"
+                  size={20}
+                  color="#FFFFFF"
+                />
+              </View>
+              <Text
+                style={[
+                  styles.activeTabLabel,
+                  styles.activeTabLabelTranslucent,
+                ]}
+              >
+                Scan Plate
+              </Text>
+            </View>
+          ) : (
+            <>
+              <MaterialCommunityIcons
+                name="camera-outline"
+                size={22}
+                color="#6B5A4E"
+              />
+              <Text style={styles.tabLabel}>Scan Plate</Text>
+            </>
+          )}
         </TouchableOpacity>
 
-        {/* Profile Settings Navigation Trigger */}
+        {/* Profile Tab */}
         <TouchableOpacity
           style={styles.tabItem}
           onPress={() => setActiveTab("PROFILE")}
-          activeOpacity={0.7}
+          activeOpacity={0.8}
         >
-          <Feather
-            name="user"
-            size={22}
-            color={activeTab === "PROFILE" ? "#0F172A" : "#94A3B8"}
-          />
-          <Text
-            style={[
-              styles.tabLabel,
-              activeTab === "PROFILE" && styles.activeTabLabel,
-            ]}
-          >
-            Profile
-          </Text>
+          {activeTab === "PROFILE" ? (
+            <View style={styles.activeTabGroup}>
+              <View style={styles.activeCircleBadge}>
+                <MaterialCommunityIcons
+                  name="account"
+                  size={20}
+                  color="#FFFFFF"
+                />
+              </View>
+              <Text
+                style={[
+                  styles.activeTabLabel,
+                  isScannerActive && styles.activeTabLabelTranslucent,
+                ]}
+              >
+                Profile
+              </Text>
+            </View>
+          ) : (
+            <>
+              <MaterialCommunityIcons
+                name="account-outline"
+                size={22}
+                color={isScannerActive ? "#FFFFFF" : "#6B5A4E"}
+              />
+              <Text
+                style={[
+                  styles.tabLabel,
+                  isScannerActive && styles.tabLabelTranslucent,
+                ]}
+              >
+                Profile
+              </Text>
+            </>
+          )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -146,6 +206,9 @@ const MainTabNavigator = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#F8FAFC",
+  },
+  containerTranslucent: {
     backgroundColor: "transparent",
   },
   contentCanvas: {
@@ -154,21 +217,31 @@ const styles = StyleSheet.create({
   },
   tabBarContainer: {
     flexDirection: "row",
-    height: 76,
-    marginHorizontal: 16,
-    marginBottom: 12,
-    borderRadius: 26,
-    backgroundColor: "rgba(255, 255, 255, 0.92)",
-    borderWidth: 1,
-    borderColor: "rgba(219, 234, 254, 0.95)",
+    height: 72,
+    backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "space-around",
-    paddingBottom: Platform.OS === "ios" ? 14 : 0,
+    paddingHorizontal: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#E2E8F0",
+    paddingBottom: Platform.OS === "ios" ? 12 : 0,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.09,
-    shadowRadius: 22,
-    elevation: 10,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  // 🔑 Glass Frosted effect styled using pure RGBA (Identical to ScannerScreen components)
+  tabBarTranslucent: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "rgba(255, 255, 255, 0.22)",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255, 255, 255, 0.35)",
+    elevation: 0,
+    shadowOpacity: 0,
   },
   tabItem: {
     alignItems: "center",
@@ -178,32 +251,38 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     fontSize: 10,
-    fontWeight: "600",
-    color: "#94A3B8",
-    marginTop: 5,
-  },
-  activeTabLabel: {
-    color: "#0F172A",
     fontWeight: "700",
+    color: "#6B5A4E",
+    marginTop: 3,
   },
-  scannerCenterPill: {
-    backgroundColor: "#0F172A",
-    width: 54,
-    height: 36,
-    borderRadius: 18,
+  tabLabelTranslucent: {
+    color: "#FFFFFF",
+  },
+  activeTabGroup: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  activeCircleBadge: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "#963E00",
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.16,
-    shadowRadius: 10,
-    elevation: 6,
+    marginBottom: 2,
+    shadowColor: "#963E00",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 5,
   },
-  scannerCenterPillActive: {
-    backgroundColor: "#0F172A",
+  activeTabLabel: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: "#963E00",
   },
-  scannerLabelAdjustment: {
-    marginTop: 4,
+  activeTabLabelTranslucent: {
+    color: "#FFFFFF",
   },
 });
 

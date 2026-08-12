@@ -8,17 +8,12 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  ImageBackground,
 } from "react-native";
 import { calculateDailyTargets } from "../utils/nutritionCalculations";
 import { isValidNumericInput } from "../utils/validation";
-// --- IMPORT THE LIVE API HELPER ---
 import { api } from "../utils/api";
 
-/**
- * OnboardingScreen Component
- * Collects user profile metrics and calculates daily nutritional targets
- * Uses Harris-Benedict equation and West African macronutrient distribution
- */
 const OnboardingScreen = ({
   onOnboardingComplete,
   onCancel,
@@ -26,9 +21,8 @@ const OnboardingScreen = ({
   currentTargets,
   currentDetails,
   isEditingMacroAllocation,
-  showNotification, // 🔑 Destructured global toast notification channel trigger
+  showNotification,
 }) => {
-  // 🔑 INITIALIZATIONS: Pre-populate states instantly if parent states exist
   const [gender, setGender] = useState(currentDetails?.gender || null);
   const [age, setAge] = useState(
     currentDetails?.age ? String(currentDetails.age) : "",
@@ -42,10 +36,6 @@ const OnboardingScreen = ({
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
-  /**
-   * 🔑 MOUNT TRIGGER EFFECT HANDSHAKE:
-   * Dynamically tracks incoming parameters if a user switches contexts to edit mode midway
-   */
   useEffect(() => {
     if (currentDetails) {
       if (currentDetails.gender) setGender(currentDetails.gender);
@@ -55,9 +45,6 @@ const OnboardingScreen = ({
     }
   }, [currentDetails]);
 
-  /**
-   * Calculate daily targets in real-time for an on-screen preview card
-   */
   const calculatedTargets = useMemo(() => {
     if (gender && age && weight && height) {
       try {
@@ -69,15 +56,12 @@ const OnboardingScreen = ({
           return calculateDailyTargets(weightNum, heightNum, ageNum, gender);
         }
       } catch (error) {
-        // Silent catch during raw character inputs
+        // Silent catch
       }
     }
     return null;
   }, [gender, age, weight, height]);
 
-  /**
-   * Validate onboarding form input values locally
-   */
   const validateForm = () => {
     const newErrors = {};
 
@@ -101,16 +85,12 @@ const OnboardingScreen = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  /**
-   * Handle onboarding complete submission
-   */
   const handleComplete = async () => {
     if (!validateForm()) return;
 
     setLoading(true);
 
     try {
-      // 1. Calculate the final targets using your West African nutrition split logic
       const dailyTargets = calculateDailyTargets(
         parseFloat(weight),
         parseInt(height, 10),
@@ -118,18 +98,15 @@ const OnboardingScreen = ({
         gender,
       );
 
-      // 2. Fire the database call to POST /api/user/targets
-      // Type casting matches PostgreSQL expectations strictly
       await api.saveTargets(
         userProfile.id,
-        gender.toLowerCase(), // Backend expects lower_case string ('male' / 'female')
-        parseInt(age, 10), // Cast string to standard integer
-        parseFloat(weight), // Cast string to standard float
-        parseInt(height, 10), // Cast string to standard integer
+        gender.toLowerCase(),
+        parseInt(age, 10),
+        parseFloat(weight),
+        parseInt(height, 10),
         dailyTargets,
       );
 
-      // 3. Update the global state inside App.js
       if (onOnboardingComplete) {
         onOnboardingComplete({
           computedTargets: dailyTargets,
@@ -142,7 +119,6 @@ const OnboardingScreen = ({
         });
       }
     } catch (error) {
-      // 🔑 FIXED: Replaced native prompt layout entirely with unified custom toast engine alerts
       if (showNotification) {
         showNotification(
           error.message || "Failed to complete metric configuration",
@@ -155,269 +131,220 @@ const OnboardingScreen = ({
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
+    <ImageBackground
+      source={require("../../assets/onboarding_background.png")}
+      style={styles.backgroundImage}
+      resizeMode="cover"
     >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.container}
       >
-        <View style={styles.stepBadge}>
-          <Text style={styles.stepBadgeText}>
-            {isEditingMacroAllocation ? "EDIT MACRO ALLOCATION" : "SETUP FLOW"}
-          </Text>
-        </View>
-
-        {/* Header */}
-        <View style={styles.headerSection}>
-          <Text style={styles.headerTitle}>
-            {isEditingMacroAllocation ? "Update Your Targets" : "Your Profile"}
-          </Text>
-          <Text style={styles.headerSubtitle}>
-            {isEditingMacroAllocation
-              ? "Review the values you already have, then update them if needed."
-              : "Let's calculate your daily nutritional targets"}
-          </Text>
-        </View>
-
-        {isEditingMacroAllocation && currentDetails && (
-          <View style={styles.currentTargetsCard}>
-            <Text style={styles.currentTargetsTitle}>Current Details</Text>
-            <View style={styles.currentTargetsRow}>
-              <View style={styles.currentTargetChip}>
-                <Text style={styles.currentTargetLabel}>Gender</Text>
-                <Text style={styles.currentTargetValue}>
-                  {currentDetails.gender || "Not set"}
-                </Text>
-              </View>
-              <View style={styles.currentTargetChip}>
-                <Text style={styles.currentTargetLabel}>Age</Text>
-                <Text style={styles.currentTargetValue}>
-                  {currentDetails.age
-                    ? `${currentDetails.age} years`
-                    : "Not set"}
-                </Text>
-              </View>
-            </View>
-            <View style={styles.currentTargetsRow}>
-              <View style={styles.currentTargetChip}>
-                <Text style={styles.currentTargetLabel}>Weight</Text>
-                <Text style={styles.currentTargetValue}>
-                  {currentDetails.weight
-                    ? `${currentDetails.weight} kg`
-                    : "Not set"}
-                </Text>
-              </View>
-              <View style={styles.currentTargetChip}>
-                <Text style={styles.currentTargetLabel}>Height</Text>
-                <Text style={styles.currentTargetValue}>
-                  {currentDetails.height
-                    ? `${currentDetails.height} cm`
-                    : "Not set"}
-                </Text>
-              </View>
-            </View>
-          </View>
-        )}
-
-        {/* Form Container */}
-        <View style={styles.formContainer}>
-          {/* Gender Selection */}
-          <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Gender</Text>
-            <View style={styles.genderButtonGroup}>
-              <TouchableOpacity
-                style={[
-                  styles.genderButton,
-                  gender === "Male" && styles.genderButtonActive,
-                ]}
-                onPress={() => {
-                  setGender("Male");
-                  if (errors.gender) {
-                    setErrors({ ...errors, gender: null });
-                  }
-                }}
-                disabled={loading}
-              >
-                <Text
-                  style={[
-                    styles.genderButtonText,
-                    gender === "Male" && styles.genderButtonTextActive,
-                  ]}
-                >
-                  Male
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.genderButton,
-                  gender === "Female" && styles.genderButtonActive,
-                ]}
-                onPress={() => {
-                  setGender("Female");
-                  if (errors.gender) {
-                    setErrors({ ...errors, gender: null });
-                  }
-                }}
-                disabled={loading}
-              >
-                <Text
-                  style={[
-                    styles.genderButtonText,
-                    gender === "Female" && styles.genderButtonTextActive,
-                  ]}
-                >
-                  Female
-                </Text>
-              </TouchableOpacity>
-            </View>
-            {errors.gender && (
-              <Text style={styles.errorText}>{errors.gender}</Text>
-            )}
-          </View>
-
-          {/* Age Input */}
-          <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Age (years)</Text>
-            <TextInput
-              style={[styles.input, errors.age && styles.inputError]}
-              placeholder="Enter your age"
-              placeholderTextColor="#A0AEC0"
-              value={age}
-              onChangeText={(text) => {
-                setAge(text);
-                if (errors.age) {
-                  setErrors({ ...errors, age: null });
-                }
-              }}
-              keyboardType="number-pad"
-              editable={!loading}
-            />
-            {errors.age && <Text style={styles.errorText}>{errors.age}</Text>}
-          </View>
-
-          {/* Weight Input */}
-          <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Weight (kg)</Text>
-            <TextInput
-              style={[styles.input, errors.weight && styles.inputError]}
-              placeholder="Enter your weight"
-              placeholderTextColor="#A0AEC0"
-              value={weight}
-              onChangeText={(text) => {
-                setWeight(text);
-                if (errors.weight) {
-                  setErrors({ ...errors, weight: null });
-                }
-              }}
-              keyboardType="decimal-pad"
-              editable={!loading}
-            />
-            {errors.weight && (
-              <Text style={styles.errorText}>{errors.weight}</Text>
-            )}
-          </View>
-
-          {/* Height Input */}
-          <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Height (cm)</Text>
-            <TextInput
-              style={[styles.input, errors.height && styles.inputError]}
-              placeholder="Enter your height"
-              placeholderTextColor="#A0AEC0"
-              value={height}
-              onChangeText={(text) => {
-                setHeight(text);
-                if (errors.height) {
-                  setErrors({ ...errors, height: null });
-                }
-              }}
-              keyboardType="number-pad"
-              editable={!loading}
-            />
-            {errors.height && (
-              <Text style={styles.errorText}>{errors.height}</Text>
-            )}
-          </View>
-
-          {/* Calculated Targets Preview */}
-          {calculatedTargets && (
-            <View style={styles.previewCard}>
-              <Text style={styles.previewTitle}>Your Daily Targets</Text>
-
-              <View style={styles.targetRow}>
-                <Text style={styles.targetLabel}>Calories</Text>
-                <Text style={styles.targetValue}>
-                  {calculatedTargets.calories} kcal
-                </Text>
-              </View>
-
-              <View style={styles.divider} />
-
-              <View style={styles.targetRow}>
-                <Text style={styles.targetLabel}>Carbohydrates (55%)</Text>
-                <Text style={styles.targetValue}>
-                  {calculatedTargets.carbs}g
-                </Text>
-              </View>
-
-              <View style={styles.targetRow}>
-                <Text style={styles.targetLabel}>Protein (20%)</Text>
-                <Text style={styles.targetValue}>
-                  {calculatedTargets.protein}g
-                </Text>
-              </View>
-
-              <View style={styles.targetRow}>
-                <Text style={styles.targetLabel}>Fats (25%)</Text>
-                <Text style={styles.targetValue}>
-                  {calculatedTargets.fats}g
-                </Text>
-              </View>
-
-              <Text style={styles.previewNote}>
-                Based on Harris-Benedict equation with 1.2 sedentary activity
-                factor
-              </Text>
-            </View>
-          )}
-
-          {/* Complete Button */}
-          <TouchableOpacity
-            style={[
-              styles.completeButton,
-              loading && styles.completeButtonDisabled,
-            ]}
-            onPress={handleComplete}
-            disabled={loading}
-          >
-            <Text style={styles.completeButtonText}>
-              {loading
-                ? "Saving..."
-                : isEditingMacroAllocation
-                  ? "Save Changes"
-                  : "Complete Setup"}
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Top Pill Badge */}
+          <View style={styles.stepBadge}>
+            <Text style={styles.stepBadgeText}>
+              {isEditingMacroAllocation
+                ? "EDIT MACRO ALLOCATION"
+                : "SETUP FLOW"}
             </Text>
-          </TouchableOpacity>
+          </View>
 
-          {isEditingMacroAllocation && (
+          {/* Header Typography */}
+          <View style={styles.headerSection}>
+            <Text style={styles.headerTitle}>
+              {isEditingMacroAllocation
+                ? "Update Your Targets"
+                : "Your Profile"}
+            </Text>
+            <Text style={styles.headerSubtitle}>
+              {isEditingMacroAllocation
+                ? "Review the values you already have, then update them if needed."
+                : "Let's calculate your daily nutritional targets"}
+            </Text>
+          </View>
+
+          {/* Form Floating Card */}
+          <View style={styles.formCard}>
+            {/* Gender Selection */}
+            <View style={styles.sectionContainer}>
+              <Text style={styles.label}>GENDER</Text>
+              <View style={styles.genderButtonGroup}>
+                <TouchableOpacity
+                  style={[
+                    styles.genderButton,
+                    gender === "Male" && styles.genderButtonActive,
+                  ]}
+                  onPress={() => {
+                    setGender("Male");
+                    if (errors.gender) {
+                      setErrors({ ...errors, gender: null });
+                    }
+                  }}
+                  disabled={loading}
+                  activeOpacity={0.8}
+                >
+                  <Text
+                    style={[
+                      styles.genderButtonText,
+                      gender === "Male" && styles.genderButtonTextActive,
+                    ]}
+                  >
+                    Male
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.genderButton,
+                    gender === "Female" && styles.genderButtonActive,
+                  ]}
+                  onPress={() => {
+                    setGender("Female");
+                    if (errors.gender) {
+                      setErrors({ ...errors, gender: null });
+                    }
+                  }}
+                  disabled={loading}
+                  activeOpacity={0.8}
+                >
+                  <Text
+                    style={[
+                      styles.genderButtonText,
+                      gender === "Female" && styles.genderButtonTextActive,
+                    ]}
+                  >
+                    Female
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              {errors.gender && (
+                <Text style={styles.errorText}>{errors.gender}</Text>
+              )}
+            </View>
+
+            {/* Age Input */}
+            <View style={styles.sectionContainer}>
+              <Text style={styles.label}>AGE (YEARS)</Text>
+              <TextInput
+                style={[styles.input, errors.age && styles.inputError]}
+                placeholder="Enter your age"
+                placeholderTextColor="#8C857B"
+                value={age}
+                onChangeText={(text) => {
+                  setAge(text);
+                  if (errors.age) setErrors({ ...errors, age: null });
+                }}
+                keyboardType="number-pad"
+                editable={!loading}
+              />
+              {errors.age && <Text style={styles.errorText}>{errors.age}</Text>}
+            </View>
+
+            {/* Weight Input */}
+            <View style={styles.sectionContainer}>
+              <Text style={styles.label}>WEIGHT (KG)</Text>
+              <TextInput
+                style={[styles.input, errors.weight && styles.inputError]}
+                placeholder="Enter your weight"
+                placeholderTextColor="#8C857B"
+                value={weight}
+                onChangeText={(text) => {
+                  setWeight(text);
+                  if (errors.weight) setErrors({ ...errors, weight: null });
+                }}
+                keyboardType="decimal-pad"
+                editable={!loading}
+              />
+              {errors.weight && (
+                <Text style={styles.errorText}>{errors.weight}</Text>
+              )}
+            </View>
+
+            {/* Height Input */}
+            <View style={styles.sectionContainer}>
+              <Text style={styles.label}>HEIGHT (CM)</Text>
+              <TextInput
+                style={[styles.input, errors.height && styles.inputError]}
+                placeholder="Enter your height"
+                placeholderTextColor="#8C857B"
+                value={height}
+                onChangeText={(text) => {
+                  setHeight(text);
+                  if (errors.height) setErrors({ ...errors, height: null });
+                }}
+                keyboardType="number-pad"
+                editable={!loading}
+              />
+              {errors.height && (
+                <Text style={styles.errorText}>{errors.height}</Text>
+              )}
+            </View>
+
+            {/* Real-time Calculated Targets Preview */}
+            {calculatedTargets && (
+              <View style={styles.previewCard}>
+                <Text style={styles.previewTitle}>Calculated Targets</Text>
+                <View style={styles.targetRow}>
+                  <Text style={styles.targetLabel}>Calories</Text>
+                  <Text style={styles.targetValue}>
+                    {calculatedTargets.calories} kcal
+                  </Text>
+                </View>
+                <View style={styles.targetRow}>
+                  <Text style={styles.targetLabel}>Carbs / Protein / Fats</Text>
+                  <Text style={styles.targetValue}>
+                    {calculatedTargets.carbs}g / {calculatedTargets.protein}g /{" "}
+                    {calculatedTargets.fats}g
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {/* Complete Button */}
             <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={onCancel}
+              style={[
+                styles.completeButton,
+                loading && styles.completeButtonDisabled,
+              ]}
+              onPress={handleComplete}
               disabled={loading}
+              activeOpacity={0.8}
             >
-              <Text style={styles.cancelButtonText}>Cancel and Go Back</Text>
+              <Text style={styles.completeButtonText}>
+                {loading
+                  ? "Saving..."
+                  : isEditingMacroAllocation
+                    ? "Save Changes"
+                    : "Complete Setup"}
+              </Text>
             </TouchableOpacity>
-          )}
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+
+            {isEditingMacroAllocation && (
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={onCancel}
+                disabled={loading}
+              >
+                <Text style={styles.cancelButtonText}>Cancel and Go Back</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
+  backgroundImage: {
+    flex: 1,
+    width: "100%",
+    height: "100%",
+  },
   container: {
     flex: 1,
     backgroundColor: "transparent",
@@ -425,229 +352,170 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 20,
-    paddingTop: 24,
-    paddingBottom: 60,
+    paddingTop: Platform.OS === "android" ? 44 : 24,
+    paddingBottom: 40,
   },
   stepBadge: {
     alignSelf: "flex-start",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 999,
-    backgroundColor: "rgba(15, 23, 42, 0.08)",
-    marginTop: 4,
-    marginBottom: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    marginBottom: 16,
   },
   stepBadgeText: {
     fontSize: 10,
     fontWeight: "800",
-    color: "#334155",
+    color: "#2D2621",
     letterSpacing: 1,
   },
   headerSection: {
-    marginBottom: 28,
-    marginTop: 18,
+    marginBottom: 20,
   },
   headerTitle: {
-    fontSize: 30,
+    fontSize: 34,
     fontWeight: "800",
-    color: "#1F2937",
-    marginBottom: 8,
+    color: "#FFFFFF",
+    marginBottom: 6,
+    textShadowColor: "rgba(0, 0, 0, 0.3)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 6,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: "#6B7280",
+    color: "#F8F6F2",
     fontWeight: "500",
+    textShadowColor: "rgba(0, 0, 0, 0.3)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
-  currentTargetsCard: {
-    backgroundColor: "rgba(255, 255, 255, 0.88)",
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "rgba(219, 234, 254, 0.95)",
-    padding: 16,
-    marginBottom: 18,
-  },
-  currentTargetsTitle: {
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 0.8,
-    color: "#6B7280",
-    textTransform: "uppercase",
-    marginBottom: 12,
-  },
-  currentTargetsRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginBottom: 10,
-  },
-  currentTargetChip: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 14,
-    backgroundColor: "#F8FAFC",
-    borderWidth: 1,
-    borderColor: "#DBEAFE",
-  },
-  currentTargetLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: "#6B7280",
-    textTransform: "uppercase",
-    letterSpacing: 0.7,
-  },
-  currentTargetValue: {
-    fontSize: 13,
-    fontWeight: "800",
-    color: "#0F172A",
-    marginTop: 4,
-  },
-  formContainer: {
-    flex: 1,
-    backgroundColor: "rgba(255, 251, 247, 0.96)",
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: "rgba(231, 224, 216, 0.95)",
-    padding: 18,
+  formCard: {
+    backgroundColor: "rgba(252, 250, 247, 0.94)",
+    borderRadius: 28,
+    padding: 20,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.05,
-    shadowRadius: 18,
-    elevation: 4,
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 5,
   },
   sectionContainer: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#6B7280",
-    marginBottom: 12,
-    textTransform: "uppercase",
+  label: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#6B5A4E",
+    marginBottom: 8,
     letterSpacing: 0.5,
   },
   genderButtonGroup: {
     flexDirection: "row",
+    gap: 12,
   },
   genderButton: {
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    height: 50,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "#E7E0D8",
-    backgroundColor: "rgba(255, 251, 247, 0.96)",
+    backgroundColor: "#F7F5F2",
+    justifyContent: "center",
     alignItems: "center",
-    marginRight: 6,
   },
   genderButtonActive: {
-    borderColor: "#1F2937",
-    backgroundColor: "#1F2937",
+    borderColor: "#963E00",
+    backgroundColor: "#963E00",
   },
   genderButtonText: {
     fontSize: 15,
-    fontWeight: "600",
+    fontWeight: "700",
     color: "#4B5563",
   },
   genderButtonTextActive: {
     color: "#FFFFFF",
   },
   input: {
+    height: 50,
     paddingHorizontal: 16,
-    paddingVertical: 12,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "#E7E0D8",
-    backgroundColor: "rgba(255, 251, 247, 0.96)",
-    fontSize: 15,
-    color: "#1F2937",
+    backgroundColor: "#F7F5F2",
+    fontSize: 14,
+    color: "#2D2621",
+    fontWeight: "500",
   },
   inputError: {
-    borderColor: "#F56565",
-    backgroundColor: "#FFF5F5",
+    borderColor: "#EF4444",
+    backgroundColor: "#FEF2F2",
   },
   errorText: {
     fontSize: 12,
-    color: "#C53030",
-    marginTop: 6,
+    color: "#EF4444",
+    marginTop: 4,
     fontWeight: "500",
   },
   previewCard: {
-    backgroundColor: "rgba(255, 251, 247, 0.96)",
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: "#E7E0D8",
-    padding: 16,
-    marginBottom: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.04,
-    shadowRadius: 16,
-    elevation: 2,
+    backgroundColor: "#EFECE6",
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 16,
   },
   previewTitle: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "700",
-    color: "#1F2937",
-    marginBottom: 12,
+    color: "#6B5A4E",
+    marginBottom: 8,
+    textTransform: "uppercase",
   },
   targetRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 10,
+    marginBottom: 4,
   },
   targetLabel: {
-    fontSize: 13,
+    fontSize: 12,
     color: "#4B5563",
-    fontWeight: "500",
   },
   targetValue: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "700",
-    color: "#1F2937",
-  },
-  divider: {
-    height: 1,
-    backgroundColor: "#E7E0D8",
-    marginVertical: 8,
-  },
-  previewNote: {
-    fontSize: 11,
-    color: "#9CA3AF",
-    fontStyle: "italic",
-    marginTop: 12,
+    color: "#2D2621",
   },
   completeButton: {
-    paddingVertical: 14,
-    borderRadius: 14,
-    backgroundColor: "#1F2937",
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: "#963E00",
+    justifyContent: "center",
     alignItems: "center",
-    marginTop: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 14,
+    shadowColor: "#963E00",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
     elevation: 4,
+    marginTop: 8,
   },
   completeButtonDisabled: {
-    opacity: 0.6,
+    opacity: 0.65,
   },
   completeButtonText: {
-    fontSize: 15,
-    fontWeight: "600",
+    fontSize: 16,
+    fontWeight: "700",
     color: "#FFFFFF",
   },
   cancelButton: {
-    paddingVertical: 13,
-    borderRadius: 12,
-    backgroundColor: "rgba(15, 23, 42, 0.06)",
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "transparent",
+    justifyContent: "center",
     alignItems: "center",
-    marginTop: 12,
+    marginTop: 8,
   },
   cancelButtonText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "700",
-    color: "#0F172A",
+    color: "#6B5A4E",
   },
 });
 

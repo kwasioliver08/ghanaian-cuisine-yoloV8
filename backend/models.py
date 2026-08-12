@@ -48,6 +48,8 @@ class MealLog(Base):
     fats = Column(Integer, nullable=False)
     is_ai_detected = Column(Boolean, default=False)
     logged_at = Column(DateTime, default=datetime.datetime.utcnow)
+    image_url = Column(String, nullable=True)
+    logged_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     user = relationship("UserProfile", back_populates="meals")
 

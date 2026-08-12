@@ -9,10 +9,10 @@ import {
   ActivityIndicator,
   Platform,
 } from "react-native";
-import { Feather } from "@expo/vector-icons";
-// --- IMPORT THE NATIVE ENDPOINTS API WORKSPACE HANDSHAKE ---
+import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
+
+// --- IMPORT LIVE API AND TOAST HELPERS ---
 import { api } from "../utils/api";
-// --- 🔑 IMPORT REUSABLE TOAST ELEMENT INFRASTRUCTURE ---
 import NotificationToast from "../components/NotificationToast";
 import { useNotification } from "../hooks/useNotification";
 
@@ -35,16 +35,16 @@ const ProfileScreen = ({
 
   // Selector states for dynamic filtering spans
   const [startYear, setStartYear] = useState(2026);
-  const [startMonth, setStartMonth] = useState(7);
-  const [startDay, setStartDay] = useState(17);
+  const [startMonth, setStartMonth] = useState(8);
+  const [startDay, setStartDay] = useState(1);
 
   const [endYear, setEndYear] = useState(2026);
-  const [endMonth, setEndMonth] = useState(7);
-  const [endDay, setEndDay] = useState(18);
+  const [endMonth, setEndMonth] = useState(8);
+  const [endDay, setEndDay] = useState(31);
 
   const [activePicker, setActivePicker] = useState(null);
 
-  // 🔑 INITIALIZE TOAST MANAGER
+  // Initialize Toast Manager
   const { notification, showNotification, hideNotification } =
     useNotification();
 
@@ -73,8 +73,6 @@ const ProfileScreen = ({
     joinedDate: "July 2026",
   };
 
-  const joinedDate = profile.joinedDate || "July 2026";
-
   const targets = dailyTargets || {
     calories: 2150,
     carbs: 295,
@@ -99,8 +97,8 @@ const ProfileScreen = ({
         applyDateFilteringRange(data);
       }
     } catch (error) {
-      console.error("Historical Ledger Parsing Mismatch:", error);
-      showNotification("Could not synchronize lifetime data rows.", "error");
+      console.error("Historical Ledger Parsing Error:", error);
+      showNotification("Could not load historical data rows.", "error");
     } finally {
       setIsLoadingHistory(false);
     }
@@ -139,13 +137,13 @@ const ProfileScreen = ({
     return MONTHS_MAP.find((m) => m.value === monthValue)?.label || monthValue;
   };
 
-  // --- SUB-SCREEN LAYER RENDER ROUTE: LIFETIME ENTRY HISTORY LEDGER ---
+  // --- SUB-SCREEN LAYER RENDER ROUTE: LIFETIME SCANNING HISTORY ---
   if (viewMode === "HISTORY") {
     return (
       <View style={styles.historyContainer}>
-        {/* Render notification on history stack layer window if needed */}
         <NotificationToast {...notification} onClose={hideNotification} />
 
+        {/* Top Header */}
         <View style={styles.historyHeaderBar}>
           <TouchableOpacity
             style={styles.backButtonInline}
@@ -154,18 +152,19 @@ const ProfileScreen = ({
               setActivePicker(null);
             }}
           >
-            <Feather name="arrow-left" size={20} color="#1F2937" />
+            <Feather name="arrow-left" size={20} color="#4A2810" />
             <Text style={styles.backButtonText}>Profile</Text>
           </TouchableOpacity>
-          <Text style={styles.historyBarTitle}>Lifetime Entry History</Text>
+          <Text style={styles.historyBarTitle}>Scanning History</Text>
           <TouchableOpacity
             onPress={fetchUserLifetimeLedger}
             style={styles.refreshButtonIcon}
           >
-            <Feather name="refresh-cw" size={16} color="#6B7280" />
+            <Feather name="refresh-cw" size={16} color="#963E00" />
           </TouchableOpacity>
         </View>
 
+        {/* Date Filter Panel */}
         <View style={styles.dateSelectorPanel}>
           <Text style={styles.panelTitleText}>Auditing Range Filter</Text>
 
@@ -178,7 +177,7 @@ const ProfileScreen = ({
                   onPress={() => toggleDropdownPicker("START_YEAR")}
                 >
                   <Text style={styles.triggerButtonText}>{startYear}</Text>
-                  <Feather name="chevron-down" size={10} color="#718096" />
+                  <Feather name="chevron-down" size={10} color="#963E00" />
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -188,7 +187,7 @@ const ProfileScreen = ({
                   <Text style={styles.triggerButtonText}>
                     {formatMonthLabel(startMonth)}
                   </Text>
-                  <Feather name="chevron-down" size={10} color="#718096" />
+                  <Feather name="chevron-down" size={10} color="#963E00" />
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -196,7 +195,7 @@ const ProfileScreen = ({
                   onPress={() => toggleDropdownPicker("START_DAY")}
                 >
                   <Text style={styles.triggerButtonText}>{startDay}</Text>
-                  <Feather name="chevron-down" size={10} color="#718096" />
+                  <Feather name="chevron-down" size={10} color="#963E00" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -209,7 +208,7 @@ const ProfileScreen = ({
                   onPress={() => toggleDropdownPicker("END_YEAR")}
                 >
                   <Text style={styles.triggerButtonText}>{endYear}</Text>
-                  <Feather name="chevron-down" size={10} color="#718096" />
+                  <Feather name="chevron-down" size={10} color="#963E00" />
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -219,7 +218,7 @@ const ProfileScreen = ({
                   <Text style={styles.triggerButtonText}>
                     {formatMonthLabel(endMonth)}
                   </Text>
-                  <Feather name="chevron-down" size={10} color="#718096" />
+                  <Feather name="chevron-down" size={10} color="#963E00" />
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -227,7 +226,7 @@ const ProfileScreen = ({
                   onPress={() => toggleDropdownPicker("END_DAY")}
                 >
                   <Text style={styles.triggerButtonText}>{endDay}</Text>
-                  <Feather name="chevron-down" size={10} color="#718096" />
+                  <Feather name="chevron-down" size={10} color="#963E00" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -245,7 +244,7 @@ const ProfileScreen = ({
                       : "Day"}
                 </Text>
                 <TouchableOpacity onPress={() => setActivePicker(null)}>
-                  <Feather name="x" size={14} color="#A0AEC0" />
+                  <Feather name="x" size={14} color="#6B5A4E" />
                 </TouchableOpacity>
               </View>
               <ScrollView
@@ -350,9 +349,9 @@ const ProfileScreen = ({
 
         {isLoadingHistory ? (
           <View style={styles.historyLoaderContainer}>
-            <ActivityIndicator size="large" color="#1F2937" />
+            <ActivityIndicator size="large" color="#963E00" />
             <Text style={styles.historyLoaderText}>
-              Synchronizing PostgreSQL Ledger...
+              Loading history entries...
             </Text>
           </View>
         ) : (
@@ -362,14 +361,14 @@ const ProfileScreen = ({
           >
             {filteredMeals.length === 0 ? (
               <View style={styles.historyEmptyCardState}>
-                <Feather name="calendar" size={34} color="#CBD5E0" />
+                <Feather name="calendar" size={34} color="#8C857B" />
                 <Text style={styles.historyEmptyStateTitle}>
-                  No Logs Within Timeframe
+                  No Logs Within Range
                 </Text>
                 <Text style={styles.historyEmptyStateSub}>
-                  No automated plate scans found between{" "}
-                  {formatMonthLabel(startMonth)} {startDay}, {startYear} and{" "}
-                  {formatMonthLabel(endMonth)} {endDay}, {endYear}.
+                  No plate scans found between {formatMonthLabel(startMonth)}{" "}
+                  {startDay}, {startYear} and {formatMonthLabel(endMonth)}{" "}
+                  {endDay}, {endYear}.
                 </Text>
               </View>
             ) : (
@@ -390,7 +389,7 @@ const ProfileScreen = ({
                     style={styles.historyRowCard}
                   >
                     <View style={styles.historyCardHeader}>
-                      <View>
+                      <View style={{ flex: 1 }}>
                         <Text style={styles.historyMealName}>{meal.name}</Text>
                         <Text style={styles.historyMealTimestamp}>
                           {clockTime} • {meal.type || "Meal Entry"}
@@ -412,9 +411,11 @@ const ProfileScreen = ({
                         Fats: {Math.round(meal.fats)}g
                       </Text>
 
-                      <View style={styles.yoloMicroBadge}>
-                        <Text style={styles.yoloMicroText}>YOLOv8 AI</Text>
-                      </View>
+                      {meal.is_ai_detected && (
+                        <View style={styles.yoloMicroBadge}>
+                          <Text style={styles.yoloMicroText}>VERIFIED</Text>
+                        </View>
+                      )}
                     </View>
                   </View>
                 );
@@ -426,10 +427,9 @@ const ProfileScreen = ({
     );
   }
 
-  // --- MAIN RENDER ROUTE: STANDARD SETTINGS & MACRO PROFILE CARD ---
+  // --- MAIN RENDER ROUTE: PROFILE VIEW ---
   return (
-    <View style={{ flex: 1 }}>
-      {/* 🔑 MASTER CUSTOM TOAST LAYER NOTIFICATION WINDFALL CONTAINER */}
+    <View style={{ flex: 1, backgroundColor: "#F8FAFC" }}>
       <NotificationToast {...notification} onClose={hideNotification} />
 
       <ScrollView
@@ -437,90 +437,86 @@ const ProfileScreen = ({
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* 1. Master Profile Header Card */}
+        {/* Profile Card */}
         <View style={styles.profileCard}>
-          <View style={styles.avatarCircle}>
-            <Text style={styles.avatarText}>
-              {profile.fullName
-                ? profile.fullName.charAt(0).toUpperCase()
-                : "U"}
-            </Text>
+          <View style={styles.avatarWrapper}>
+            <View style={styles.avatarCircle}>
+              <Text style={styles.avatarText}>
+                {profile.fullName
+                  ? profile.fullName.charAt(0).toUpperCase()
+                  : "K"}
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.editAvatarBadge}
+              activeOpacity={0.8}
+            >
+              <Feather name="edit-2" size={12} color="#FFFFFF" />
+            </TouchableOpacity>
           </View>
+
           <Text style={styles.userName}>{profile.fullName}</Text>
           <Text style={styles.userEmail}>{profile.email}</Text>
-
-          <View style={styles.profileMetaRow}>
-            <View style={styles.profileMetaChip}>
-              <Text style={styles.profileMetaLabel}>Joined</Text>
-              <Text style={styles.profileMetaValue}>{joinedDate}</Text>
-            </View>
-            <View style={styles.profileMetaChip}>
-              <Text style={styles.profileMetaLabel}>Targets</Text>
-              <Text style={styles.profileMetaValue}>4 macro goals</Text>
-            </View>
-          </View>
         </View>
 
-        {/* 1b. Saved Personal Details */}
+        {/* Current Details */}
         <Text style={styles.sectionTitle}>Current Details</Text>
         <View style={styles.detailsGrid}>
           <View style={styles.detailCard}>
-            <Text style={styles.detailLabel}>Gender</Text>
+            <Text style={styles.detailLabel}>GENDER</Text>
             <Text style={styles.detailValue}>
-              {onboardingDetails?.gender || "Not set"}
+              {onboardingDetails?.gender || "Male"}
             </Text>
           </View>
           <View style={styles.detailCard}>
-            <Text style={styles.detailLabel}>Age</Text>
+            <Text style={styles.detailLabel}>AGE</Text>
             <Text style={styles.detailValue}>
-              {onboardingDetails?.age
-                ? `${onboardingDetails.age} years`
-                : "Not set"}
+              {onboardingDetails?.age ? onboardingDetails.age : "28"}
             </Text>
           </View>
           <View style={styles.detailCard}>
-            <Text style={styles.detailLabel}>Weight</Text>
+            <Text style={styles.detailLabel}>WEIGHT</Text>
             <Text style={styles.detailValue}>
               {onboardingDetails?.weight
-                ? `${onboardingDetails.weight} kg`
-                : "Not set"}
+                ? `${onboardingDetails.weight}kg`
+                : "75kg"}
             </Text>
           </View>
           <View style={styles.detailCard}>
-            <Text style={styles.detailLabel}>Height</Text>
+            <Text style={styles.detailLabel}>HEIGHT</Text>
             <Text style={styles.detailValue}>
               {onboardingDetails?.height
-                ? `${onboardingDetails.height} cm`
-                : "Not set"}
+                ? `${onboardingDetails.height}cm`
+                : "180cm"}
             </Text>
           </View>
         </View>
 
-        {/* 2. Nutritional Macro Targets Section */}
+        {/* Daily Metabolic Targets */}
         <Text style={styles.sectionTitle}>Daily Metabolic Targets</Text>
         <View style={styles.macroGrid}>
-          <View style={[styles.macroCard, { borderLeftColor: "#4A5568" }]}>
+          <View style={[styles.macroCard, { borderLeftColor: "#2563EB" }]}>
             <Text style={styles.macroLabel}>Energy Target</Text>
             <Text style={styles.macroValue}>
               {targets.calories} <Text style={styles.macroUnit}>kcal</Text>
             </Text>
           </View>
 
-          <View style={[styles.macroCard, { borderLeftColor: "#3182CE" }]}>
+          <View style={[styles.macroCard, { borderLeftColor: "#16A34A" }]}>
             <Text style={styles.macroLabel}>Protein Target</Text>
             <Text style={styles.macroValue}>
               {targets.protein} <Text style={styles.macroUnit}>g</Text>
             </Text>
           </View>
 
-          <View style={[styles.macroCard, { borderLeftColor: "#DD6B20" }]}>
+          <View style={[styles.macroCard, { borderLeftColor: "#EA580C" }]}>
             <Text style={styles.macroLabel}>Carbohydrates</Text>
             <Text style={styles.macroValue}>
               {targets.carbs} <Text style={styles.macroUnit}>g</Text>
             </Text>
           </View>
 
-          <View style={[styles.macroCard, { borderLeftColor: "#E53E3E" }]}>
+          <View style={[styles.macroCard, { borderLeftColor: "#DC2626" }]}>
             <Text style={styles.macroLabel}>Lipids / Fats</Text>
             <Text style={styles.macroValue}>
               {targets.fats} <Text style={styles.macroUnit}>g</Text>
@@ -528,23 +524,16 @@ const ProfileScreen = ({
           </View>
         </View>
 
-        {/* 3. Account Actions System Menu */}
+        {/* Workspace Settings */}
         <Text style={styles.sectionTitle}>Workspace Settings</Text>
         <View style={styles.settingsMenu}>
           <TouchableOpacity
             style={styles.menuItem}
             onPress={() => setViewMode("HISTORY")}
+            activeOpacity={0.7}
           >
-            <View style={styles.menuItemLeftGroup}>
-              <Feather
-                name="clock"
-                size={16}
-                color="#4B5563"
-                style={styles.inlineMenuIcon}
-              />
-              <Text style={styles.menuItemText}>Itemized Scanning History</Text>
-            </View>
-            <Text style={styles.menuArrow}>›</Text>
+            <Text style={styles.menuItemText}>Itemized Scanning History</Text>
+            <Feather name="chevron-right" size={18} color="#94A3B8" />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -559,19 +548,12 @@ const ProfileScreen = ({
                 "error",
               );
             }}
+            activeOpacity={0.7}
           >
-            <View style={styles.menuItemLeftGroup}>
-              <Feather
-                name="sliders"
-                size={16}
-                color="#4B5563"
-                style={styles.inlineMenuIcon}
-              />
-              <Text style={styles.menuItemText}>
-                Edit Macro Allocation Profile
-              </Text>
-            </View>
-            <Text style={styles.menuArrow}>›</Text>
+            <Text style={styles.menuItemText}>
+              Edit Macro Allocation Profile
+            </Text>
+            <Feather name="chevron-right" size={18} color="#94A3B8" />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -579,7 +561,6 @@ const ProfileScreen = ({
             onPress={() => {
               if (onClearScanIndexes) {
                 onClearScanIndexes();
-                // 🔑 FIXED: Replaced native prompt with custom notification banner toast
                 showNotification(
                   "Scanner indexing engines flushed completely!",
                   "success",
@@ -591,30 +572,22 @@ const ProfileScreen = ({
                 "info",
               );
             }}
+            activeOpacity={0.7}
           >
-            <View style={styles.menuItemLeftGroup}>
-              <Feather
-                name="trash-2"
-                size={16}
-                color="#4B5563"
-                style={styles.inlineMenuIcon}
-              />
-              <Text style={styles.menuItemText}>Clear Local Scan Indexes</Text>
-            </View>
-            <Text style={styles.menuArrow}>›</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.menuItem, styles.logoutItem]}
-            onPress={onLogout}
-          >
-            <Text style={styles.logoutText}>Sign Out of Application</Text>
+            <Text style={styles.menuItemText}>Clear Local Scan Indexes</Text>
+            <Feather name="chevron-right" size={18} color="#94A3B8" />
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.footerBranding}>
-          Ghanaian Cuisine Local Food Analyzer v1.0.0
-        </Text>
+        {/* Sign Out Button */}
+        <TouchableOpacity
+          style={styles.signOutCardButton}
+          onPress={onLogout}
+          activeOpacity={0.8}
+        >
+          <Feather name="log-out" size={16} color="#DC2626" />
+          <Text style={styles.signOutCardText}>Sign Out</Text>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -623,163 +596,143 @@ const ProfileScreen = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "transparent",
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 24,
-    paddingBottom: 40,
+    paddingTop: Platform.OS === "android" ? 44 : 20,
+    paddingBottom: 100,
   },
   profileCard: {
-    backgroundColor: "rgba(255, 251, 247, 0.96)",
-    borderRadius: 18,
-    padding: 22,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    padding: 24,
     alignItems: "center",
+    marginBottom: 24,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.05,
-    shadowRadius: 18,
-    elevation: 4,
-    marginBottom: 28,
-    borderWidth: 1,
-    borderColor: "rgba(231, 224, 216, 0.95)",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  avatarWrapper: {
+    position: "relative",
+    marginBottom: 12,
   },
   avatarCircle: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: "#1F2937",
+    backgroundColor: "#2B1A0F",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 16,
   },
   avatarText: {
     color: "#FFFFFF",
-    fontSize: 32,
-    fontWeight: "700",
+    fontSize: 28,
+    fontWeight: "800",
+  },
+  editAvatarBadge: {
+    position: "absolute",
+    bottom: 2,
+    right: 2,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: "#963E00",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
   },
   userName: {
-    fontSize: 23,
+    fontSize: 22,
     fontWeight: "800",
     color: "#1F2937",
-    marginBottom: 4,
+    marginBottom: 2,
   },
   userEmail: {
-    fontSize: 14,
-    color: "#6B7280",
-    fontWeight: "500",
-    marginBottom: 16,
-  },
-  profileMetaRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 6,
-    width: "100%",
-  },
-  profileMetaChip: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 14,
-    backgroundColor: "#F8F6F2",
-    borderWidth: 1,
-    borderColor: "#E7E0D8",
-  },
-  profileMetaLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: "#6B7280",
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-  },
-  profileMetaValue: {
     fontSize: 13,
-    fontWeight: "700",
-    color: "#1F2937",
-    marginTop: 4,
+    color: "#64748B",
+    fontWeight: "500",
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#963E00",
+    marginBottom: 12,
   },
   detailsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 10,
+    gap: 12,
     marginBottom: 24,
   },
   detailCard: {
-    width: "48%",
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 14,
-    backgroundColor: "#F8F6F2",
-    borderWidth: 1,
-    borderColor: "#E7E0D8",
+    width: (width - 52) / 2,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    backgroundColor: "#FFFFFF",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 2,
   },
   detailLabel: {
     fontSize: 10,
-    fontWeight: "700",
-    color: "#6B7280",
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
+    fontWeight: "800",
+    color: "#64748B",
+    letterSpacing: 0.5,
   },
   detailValue: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "800",
     color: "#1F2937",
     marginTop: 4,
   },
-  sectionTitle: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#6B7280",
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-    marginBottom: 12,
-    paddingLeft: 4,
-  },
   macroGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-between",
     gap: 12,
-    marginBottom: 28,
+    marginBottom: 24,
   },
   macroCard: {
-    backgroundColor: "rgba(255, 251, 247, 0.96)",
+    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 16,
     width: (width - 52) / 2,
     borderLeftWidth: 4,
-    borderWidth: 1,
-    borderColor: "rgba(231, 224, 216, 0.95)",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.04,
-    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
     elevation: 2,
   },
   macroLabel: {
     fontSize: 11,
-    fontWeight: "600",
-    color: "#6B7280",
-    marginBottom: 6,
+    fontWeight: "700",
+    color: "#64748B",
+    marginBottom: 4,
   },
   macroValue: {
-    fontSize: 19,
+    fontSize: 18,
     fontWeight: "800",
     color: "#1F2937",
   },
   macroUnit: {
     fontSize: 11,
-    fontWeight: "500",
-    color: "#9CA3AF",
+    fontWeight: "600",
+    color: "#94A3B8",
   },
   settingsMenu: {
-    backgroundColor: "rgba(255, 251, 247, 0.96)",
-    borderRadius: 16,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
     overflow: "hidden",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.04,
-    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
     elevation: 2,
     marginBottom: 20,
   },
@@ -790,70 +743,56 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#EDF2F7",
-  },
-  menuItemLeftGroup: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  inlineMenuIcon: {
-    marginTop: -1,
+    borderBottomColor: "#F1F5F9",
   },
   menuItemText: {
     fontSize: 14,
-    fontWeight: "600",
-    color: "#374151",
-  },
-  menuArrow: {
-    fontSize: 18,
-    color: "#9CA3AF",
-    fontWeight: "bold",
-  },
-  logoutItem: {
-    borderBottomWidth: 0,
-    backgroundColor: "#FFF6F5",
-    justifyContent: "center",
-  },
-  logoutText: {
-    fontSize: 14,
     fontWeight: "700",
-    color: "#B4534B",
-    textAlign: "center",
+    color: "#334155",
   },
-  footerBranding: {
-    textAlign: "center",
-    fontSize: 11,
-    color: "#9CA3AF",
-    fontWeight: "500",
-    marginTop: 10,
+  signOutCardButton: {
+    flexDirection: "row",
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1.5,
+    borderColor: "#FECACA",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 4,
+  },
+  signOutCardText: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#DC2626",
   },
 
-  // --- SUB-SCREEN COMPONENT CUSTOM STYLES ---
+  /* ---------------- Sub-Screen History Styles ---------------- */
   historyContainer: {
     flex: 1,
-    backgroundColor: "transparent",
+    backgroundColor: "#F8FAFC",
   },
   historyHeaderBar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === "ios" ? 54 : 44,
+    paddingTop: Platform.OS === "android" ? 44 : 20,
     paddingBottom: 14,
+    backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
-    borderColor: "rgba(231, 224, 216, 0.4)",
-    backgroundColor: "rgba(255, 251, 247, 0.96)",
+    borderBottomColor: "#E2E8F0",
   },
   backButtonInline: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 6,
   },
   backButtonText: {
     fontSize: 14,
-    fontWeight: "700",
-    color: "#1F2937",
+    fontWeight: "800",
+    color: "#4A2810",
   },
   historyBarTitle: {
     fontSize: 16,
@@ -864,20 +803,22 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   dateSelectorPanel: {
-    backgroundColor: "rgba(255, 251, 247, 0.96)",
+    backgroundColor: "#FFFFFF",
     marginHorizontal: 20,
-    marginTop: 14,
-    marginBottom: 6,
-    padding: 14,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(231, 224, 216, 0.95)",
+    marginTop: 16,
+    marginBottom: 10,
+    padding: 16,
+    borderRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 2,
   },
   panelTitleText: {
     fontSize: 11,
-    fontWeight: "700",
-    color: "#4B5563",
-    textTransform: "uppercase",
+    fontWeight: "800",
+    color: "#963E00",
     letterSpacing: 0.5,
     marginBottom: 10,
   },
@@ -890,8 +831,8 @@ const styles = StyleSheet.create({
   },
   inputLabelMicro: {
     fontSize: 9,
-    fontWeight: "700",
-    color: "#718096",
+    fontWeight: "800",
+    color: "#64748B",
     textTransform: "uppercase",
     marginBottom: 6,
   },
@@ -901,8 +842,8 @@ const styles = StyleSheet.create({
   },
   dropdownTriggerButton: {
     flex: 1,
-    height: 38,
-    backgroundColor: "#FFFFFF",
+    height: 36,
+    backgroundColor: "#F8FAFC",
     borderWidth: 1,
     borderColor: "#E2E8F0",
     borderRadius: 10,
@@ -913,14 +854,14 @@ const styles = StyleSheet.create({
   },
   triggerButtonText: {
     fontSize: 11,
-    fontWeight: "600",
-    color: "#2D3748",
+    fontWeight: "700",
+    color: "#334155",
   },
   expandedTrayWrapper: {
     marginTop: 12,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: "#EDF2F7",
+    borderTopColor: "#F1F5F9",
   },
   trayHeaderRow: {
     flexDirection: "row",
@@ -930,8 +871,8 @@ const styles = StyleSheet.create({
   },
   trayTitleText: {
     fontSize: 10,
-    fontWeight: "700",
-    color: "#A0AEC0",
+    fontWeight: "800",
+    color: "#64748B",
     textTransform: "uppercase",
   },
   trayScrollContent: {
@@ -941,20 +882,17 @@ const styles = StyleSheet.create({
   trayItemChip: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: "#F7FAFC",
+    backgroundColor: "#F1F5F9",
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
     marginRight: 6,
   },
   trayItemChipActive: {
-    backgroundColor: "#1F2937",
-    borderColor: "#1F2937",
+    backgroundColor: "#963E00",
   },
   trayChipLabel: {
     fontSize: 12,
-    fontWeight: "600",
-    color: "#4A5568",
+    fontWeight: "700",
+    color: "#475569",
   },
   trayChipLabelActive: {
     color: "#FFFFFF",
@@ -967,44 +905,47 @@ const styles = StyleSheet.create({
   },
   historyLoaderText: {
     fontSize: 13,
-    color: "#6B7280",
+    color: "#6B5A4E",
     fontWeight: "600",
     marginTop: 12,
   },
   historyScrollWindow: {
     paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 32,
+    paddingTop: 6,
+    paddingBottom: 40,
   },
   historyEmptyCardState: {
-    backgroundColor: "rgba(255, 251, 247, 0.5)",
-    borderRadius: 16,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
     padding: 32,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgba(231, 224, 216, 0.7)",
-    marginTop: 20,
+    borderColor: "#E2E8F0",
+    marginTop: 12,
   },
   historyEmptyStateTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#4B5563",
+    fontSize: 15,
+    fontWeight: "800",
+    color: "#334155",
     marginTop: 12,
     marginBottom: 4,
   },
   historyEmptyStateSub: {
-    fontSize: 11,
-    color: "#9CA3AF",
+    fontSize: 12,
+    color: "#64748B",
     textAlign: "center",
-    lineHeight: 16,
+    lineHeight: 18,
   },
   historyRowCard: {
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
-    borderRadius: 14,
-    padding: 14,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 16,
     marginBottom: 10,
-    borderWidth: 1,
-    borderColor: "#EDF2F7",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 2,
   },
   historyCardHeader: {
     flexDirection: "row",
@@ -1012,47 +953,47 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
   },
   historyMealName: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "800",
-    color: "#2D3748",
+    color: "#1F2937",
   },
   historyMealTimestamp: {
     fontSize: 11,
-    color: "#718096",
+    color: "#64748B",
     fontWeight: "500",
     marginTop: 2,
   },
   historyCalorieCount: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "800",
-    color: "#1F2937",
+    color: "#963E00",
   },
   historyMacroPillsRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    marginTop: 10,
-    paddingTop: 8,
+    marginTop: 12,
+    paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: "#F7FAFC",
+    borderTopColor: "#F1F5F9",
   },
   inlineMacroPillText: {
     fontSize: 11,
-    fontWeight: "600",
-    color: "#4A5568",
+    fontWeight: "700",
+    color: "#475569",
   },
   yoloMicroBadge: {
-    backgroundColor: "rgba(56, 161, 105, 0.1)",
+    backgroundColor: "#E8F5E9",
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 6,
+    borderRadius: 8,
     marginLeft: "auto",
   },
   yoloMicroText: {
     fontSize: 9,
     fontWeight: "800",
-    color: "#276749",
-    letterSpacing: 0.3,
+    color: "#1B5E20",
+    letterSpacing: 0.5,
   },
 });
 

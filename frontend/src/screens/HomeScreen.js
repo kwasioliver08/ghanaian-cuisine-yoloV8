@@ -6,39 +6,28 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  RefreshControl, // Added for pull-to-refresh execution
-  ActivityIndicator, // Smooth indicator during loading states
+  RefreshControl,
+  ActivityIndicator,
+  Image,
+  Platform,
 } from "react-native";
-import {
-  Feather,
-  MaterialCommunityIcons,
-  FontAwesome,
-} from "@expo/vector-icons";
-// --- IMPORT THE LIVE API HELPER ---
+import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { api } from "../utils/api";
 
-/**
- * HomeScreen Component
- * Displays a nutritional dashboard and a historical dietary timeline log pulled from DB
- */
 const HomeScreen = ({
   userProfile,
   dailyTargets,
   onLogout,
   onNavigateToScanner,
+  onNavigateToHistory,
 }) => {
-  // Swapped out hardcoded mock metrics array for a clean database log hook state tracker
   const [loggedMeals, setLoggedMeals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  /**
-   * Fetch daily logged items from backend PostgreSQL database
-   */
   const fetchDailyLogs = async (showLoader = true) => {
     if (showLoader) setLoading(true);
     try {
-      // Endpoint call to gather today's specific logged food records
       const mealsData = await api.getDailyMeals(userProfile.id);
       setLoggedMeals(mealsData || []);
     } catch (error) {
@@ -53,12 +42,12 @@ const HomeScreen = ({
     }
   };
 
-  // Run initial fetch operation once when dashboard tree structure mounts
   useEffect(() => {
-    fetchDailyLogs(true);
-  }, [userProfile.id]);
+    if (userProfile?.id) {
+      fetchDailyLogs(true);
+    }
+  }, [userProfile?.id]);
 
-  // Pull-to-refresh execution configuration function handler
   const handleRefresh = () => {
     setRefreshing(true);
     fetchDailyLogs(false);
@@ -78,52 +67,27 @@ const HomeScreen = ({
     );
   }, [loggedMeals]);
 
-  const getRemainingAllowance = (key) => {
-    const target = dailyTargets ? dailyTargets[key] : 2000;
-    const consumed = consumedNutrients[key] || 0;
-    return Math.max(0, target - consumed);
-  };
+  const getTarget = (key, fallback) =>
+    dailyTargets && dailyTargets[key] ? dailyTargets[key] : fallback;
 
-  const getProgressPercentage = (key) => {
-    const target = dailyTargets && dailyTargets[key] ? dailyTargets[key] : 2000;
-    const consumed = consumedNutrients[key] || 0;
+  const remainingCalories = Math.max(
+    0,
+    getTarget("calories", 2200) - consumedNutrients.calories,
+  );
+
+  const getProgressPercentage = (consumed, target) => {
+    if (!target || target <= 0) return 0;
     return Math.min(100, (consumed / target) * 100);
   };
 
-  const renderMacroRow = (label, key, color) => {
-    const target = dailyTargets ? dailyTargets[key] : 0;
-    const consumed = consumedNutrients[key];
-    const remaining = getRemainingAllowance(key);
-    const progress = getProgressPercentage(key);
-    const unit = key === "calories" ? " kcal" : "g";
-
-    return (
-      <View key={key} style={styles.macroRowItem}>
-        <View style={styles.macroRowHeader}>
-          <Text style={styles.macroRowLabel}>{label}</Text>
-          <Text style={styles.macroRowValue}>
-            {consumed} / {target}
-            {unit}
-            <Text style={styles.macroRemainingText}> ({remaining} left)</Text>
-          </Text>
-        </View>
-        <View style={styles.progressBarContainer}>
-          <View
-            style={[
-              styles.progressBar,
-              { width: `${progress}%`, backgroundColor: color },
-            ]}
-          />
-        </View>
-      </View>
-    );
-  };
+  // Most recent logged meal for the "Last Scanned" card
+  const lastScannedMeal = loggedMeals.length > 0 ? loggedMeals[0] : null;
 
   return (
     <View style={styles.rootContainer}>
       {loading ? (
         <View style={styles.centeredLoader}>
-          <ActivityIndicator size="large" color="#0F172A" />
+          <ActivityIndicator size="large" color="#963E00" />
           <Text style={styles.loaderText}>Syncing metrics dashboard...</Text>
         </View>
       ) : (
@@ -135,168 +99,267 @@ const HomeScreen = ({
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              color="#0F172A"
+              tintColor="#963E00"
+              colors={["#963E00"]}
             />
           }
         >
-          {/* Profile Welcome Section */}
-          <View style={styles.headerSection}>
-            <View style={styles.heroBadge}>
-              <Text style={styles.heroBadgeText}>TODAY</Text>
-            </View>
-            <Text style={styles.welcomeText}>
-              Welcome back, {userProfile?.fullName?.split(" ")[0] || "User"}
-            </Text>
-            <Text style={styles.dateText}>
-              {new Date().toLocaleDateString("en-US", {
-                weekday: "long",
-                month: "short",
-                day: "numeric",
-              })}
-            </Text>
-          </View>
-
-          {/* Nutritional Dashboard Summary Card */}
-          <View style={styles.dashboardCard}>
-            <View style={styles.caloriesDisplayGroup}>
-              <Text style={styles.bigCalorieNumber}>
-                {getRemainingAllowance("calories")}
+          {/* Top Header Bar */}
+          <View style={styles.headerBar}>
+            <View style={styles.userInfoRow}>
+              <View style={styles.avatarCircle}>
+                <Text style={styles.avatarText}>
+                  {userProfile?.fullName
+                    ? userProfile.fullName.charAt(0).toUpperCase()
+                    : "K"}
+                </Text>
+              </View>
+              <Text style={styles.headerTitle}>
+                Akwaaba, {userProfile?.fullName?.split(" ")[0] || "Kofi"}
               </Text>
-              <Text style={styles.bigCalorieLabel}>Calories Remaining</Text>
             </View>
-
-            <View style={styles.heroStatsRow}>
-              <View style={styles.heroStatCard}>
-                <Text style={styles.heroStatValue}>
-                  {consumedNutrients.calories}
-                </Text>
-                <Text style={styles.heroStatLabel}>Consumed</Text>
-              </View>
-              <View style={styles.heroStatCard}>
-                <Text style={styles.heroStatValue}>
-                  {dailyTargets?.calories || 2000}
-                </Text>
-                <Text style={styles.heroStatLabel}>Goal</Text>
-              </View>
-              <View style={styles.heroStatCard}>
-                <Text style={styles.heroStatValue}>{loggedMeals.length}</Text>
-                <Text style={styles.heroStatLabel}>Meals</Text>
-              </View>
-            </View>
-
-            <View style={styles.dividerLine} />
-
-            <Text style={styles.dashboardSectionTitle}>Macro Allocations</Text>
-            <View style={styles.macroListGrid}>
-              {renderMacroRow("Carbohydrates (55%)", "carbs", "#DD6B20")}
-              {renderMacroRow("Protein (20%)", "protein", "#3182CE")}
-              {renderMacroRow("Fats (25%)", "fats", "#E53E3E")}
-            </View>
-          </View>
-
-          {/* Historical Dietary Timeline Section */}
-          <View style={styles.timelineSection}>
-            <Text style={styles.sectionTitle}>Meal Timeline</Text>
-
-            {loggedMeals.length === 0 ? (
-              <View style={styles.emptyLogsCard}>
-                <MaterialCommunityIcons
-                  name="silverware-fork-knife"
-                  size={32}
-                  color="#94A3B8"
-                />
-                <Text style={styles.emptyLogsText}>
-                  No meals tracked today yet.
-                </Text>
-                <Text style={styles.emptyLogsSubtext}>
-                  Tap the camera button below to snap or search breakfast,
-                  lunch, or dinner entry points!
-                </Text>
-              </View>
-            ) : (
-              loggedMeals.map((meal) => (
-                <View key={meal.id || meal._id} style={styles.mealLogCard}>
-                  <View style={styles.mealCardHeader}>
-                    <View>
-                      <Text style={styles.mealCategoryTitle}>
-                        {meal.type || "Meal Entry"}
-                      </Text>
-                      <Text style={styles.mealTimeText}>
-                        {meal.time || "Just now"}
-                      </Text>
-                    </View>
-                    <Text style={styles.mealCalorieTag}>
-                      +{Math.round(meal.calories)} kcal
-                    </Text>
-                  </View>
-
-                  <Text style={styles.mealNameText}>{meal.name}</Text>
-
-                  <View style={styles.mealPillGroupRow}>
-                    <View
-                      style={[
-                        styles.macroPill,
-                        { backgroundColor: "rgba(221, 107, 32, 0.10)" },
-                      ]}
-                    >
-                      <Text
-                        style={[styles.macroPillText, { color: "#C05621" }]}
-                      >
-                        Carbs: {Math.round(meal.carbs)}g
-                      </Text>
-                    </View>
-                    <View
-                      style={[
-                        styles.macroPill,
-                        { backgroundColor: "rgba(49, 130, 206, 0.10)" },
-                      ]}
-                    >
-                      <Text
-                        style={[styles.macroPillText, { color: "#2B6CB0" }]}
-                      >
-                        Protein: {Math.round(meal.protein)}g
-                      </Text>
-                    </View>
-                    <View
-                      style={[
-                        styles.macroPill,
-                        { backgroundColor: "rgba(229, 62, 62, 0.10)" },
-                      ]}
-                    >
-                      <Text
-                        style={[styles.macroPillText, { color: "#C53030" }]}
-                      >
-                        Fats: {Math.round(meal.fats)}g
-                      </Text>
-                    </View>
-
-                    {meal.isAiDetected && (
-                      <View style={styles.aiDetectedBadge}>
-                        <Text style={styles.aiBadgeText}>YOLOv8 AI</Text>
-                      </View>
-                    )}
-                  </View>
-                </View>
-              ))
-            )}
-          </View>
-
-          {/* Session Log Out Actions */}
-          <View style={styles.logoutActionContainer}>
-            <TouchableOpacity style={styles.signOutButton} onPress={onLogout}>
-              <Text style={styles.signOutButtonText}>Sign Out Account</Text>
+            <TouchableOpacity
+              style={styles.notificationButton}
+              activeOpacity={0.7}
+            >
+              <Feather name="bell" size={18} color="#963E00" />
             </TouchableOpacity>
           </View>
+
+          {/* Daily Summary Card */}
+          <View style={styles.card}>
+            {/* Circular Calorie Gauge */}
+            <View style={styles.calorieRingContainer}>
+              <View style={styles.calorieRingOuter}>
+                <View style={styles.calorieRingInner}>
+                  <Text style={styles.calorieValueText}>
+                    {remainingCalories.toLocaleString()}
+                  </Text>
+                  <Text style={styles.calorieSubText}>KCAL LEFT</Text>
+                </View>
+              </View>
+            </View>
+
+            <Text style={styles.summaryTitle}>Daily Summary</Text>
+            <Text style={styles.summarySubtext}>
+              You've consumed {consumedNutrients.calories.toLocaleString()} of
+              your {getTarget("calories", 2200).toLocaleString()} kcal daily
+              goal.
+            </Text>
+
+            {/* Macro Summary Chips */}
+            <View style={styles.macroPillRow}>
+              <View style={styles.macroPillBox}>
+                <Text style={styles.macroPillLabel}>Carbs</Text>
+                <Text style={styles.macroPillValue}>
+                  {consumedNutrients.carbs}g
+                </Text>
+              </View>
+              <View style={styles.macroPillBox}>
+                <Text style={styles.macroPillLabel}>Protein</Text>
+                <Text style={[styles.macroPillValue, { color: "#1B5E20" }]}>
+                  {consumedNutrients.protein}g
+                </Text>
+              </View>
+              <View style={styles.macroPillBox}>
+                <Text style={styles.macroPillLabel}>Fats</Text>
+                <Text style={[styles.macroPillValue, { color: "#963E00" }]}>
+                  {consumedNutrients.fats}g
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Nutrient Goals Card */}
+          <View style={styles.card}>
+            <Text style={styles.cardHeaderTitle}>Nutrient Goals</Text>
+
+            {/* Protein Goal Bar */}
+            <View style={styles.goalRow}>
+              <View style={styles.goalHeader}>
+                <View style={styles.goalLabelGroup}>
+                  <View
+                    style={[styles.colorDot, { backgroundColor: "#1B5E20" }]}
+                  />
+                  <Text style={styles.goalLabel}>Protein</Text>
+                </View>
+                <Text style={styles.goalValue}>
+                  {consumedNutrients.protein} / {getTarget("protein", 108)}g
+                </Text>
+              </View>
+              <View style={styles.progressBarBg}>
+                <View
+                  style={[
+                    styles.progressBarFill,
+                    {
+                      width: `${getProgressPercentage(
+                        consumedNutrients.protein,
+                        getTarget("protein", 108),
+                      )}%`,
+                      backgroundColor: "#1B5E20",
+                    },
+                  ]}
+                />
+              </View>
+            </View>
+
+            {/* Carbs Goal Bar */}
+            <View style={styles.goalRow}>
+              <View style={styles.goalHeader}>
+                <View style={styles.goalLabelGroup}>
+                  <View
+                    style={[styles.colorDot, { backgroundColor: "#4A2810" }]}
+                  />
+                  <Text style={styles.goalLabel}>Carbs</Text>
+                </View>
+                <Text style={styles.goalValue}>
+                  {consumedNutrients.carbs} / {getTarget("carbs", 295)}g
+                </Text>
+              </View>
+              <View style={styles.progressBarBg}>
+                <View
+                  style={[
+                    styles.progressBarFill,
+                    {
+                      width: `${getProgressPercentage(
+                        consumedNutrients.carbs,
+                        getTarget("carbs", 295),
+                      )}%`,
+                      backgroundColor: "#4A2810",
+                    },
+                  ]}
+                />
+              </View>
+            </View>
+
+            {/* Fats Goal Bar */}
+            <View style={styles.goalRow}>
+              <View style={styles.goalHeader}>
+                <View style={styles.goalLabelGroup}>
+                  <View
+                    style={[styles.colorDot, { backgroundColor: "#963E00" }]}
+                  />
+                  <Text style={styles.goalLabel}>Fats</Text>
+                </View>
+                <Text style={styles.goalValue}>
+                  {consumedNutrients.fats} / {getTarget("fats", 60)}g
+                </Text>
+              </View>
+              <View style={styles.progressBarBg}>
+                <View
+                  style={[
+                    styles.progressBarFill,
+                    {
+                      width: `${getProgressPercentage(
+                        consumedNutrients.fats,
+                        getTarget("fats", 60),
+                      )}%`,
+                      backgroundColor: "#963E00",
+                    },
+                  ]}
+                />
+              </View>
+            </View>
+          </View>
+
+          {/* Last Scanned Section */}
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionTitle}>Last Scanned</Text>
+            <TouchableOpacity onPress={onNavigateToHistory} activeOpacity={0.7}>
+              <Text style={styles.viewHistoryText}>View History</Text>
+            </TouchableOpacity>
+          </View>
+
+          {lastScannedMeal ? (
+            <View style={styles.lastScannedCard}>
+              {/* Scanned Image or Fallback */}
+              <View style={styles.lastScannedImageContainer}>
+                <Image
+                  source={
+                    lastScannedMeal.image_url
+                      ? { uri: lastScannedMeal.image_url }
+                      : require("../../assets/sign_in_banner.jpg")
+                  }
+                  style={styles.lastScannedImage}
+                  resizeMode="cover"
+                />
+                <View style={styles.verifiedBadge}>
+                  <Text style={styles.verifiedBadgeText}>VERIFIED</Text>
+                </View>
+              </View>
+
+              {/* Meal Details */}
+              <View style={styles.lastScannedDetails}>
+                <View style={styles.lastScannedTitleRow}>
+                  <Text style={styles.lastScannedName}>
+                    {lastScannedMeal.name}
+                  </Text>
+                  <View style={styles.calorieBadge}>
+                    <Text style={styles.calorieBadgeNumber}>
+                      {Math.round(lastScannedMeal.calories)}
+                    </Text>
+                    <Text style={styles.calorieBadgeLabel}>KCAL</Text>
+                  </View>
+                </View>
+
+                <Text style={styles.lastScannedSubtext}>
+                  {lastScannedMeal.type || "Daily Meal Entry"}
+                </Text>
+
+                {/* Macro Tags */}
+                <View style={styles.tagRow}>
+                  <View
+                    style={[styles.tagPill, { backgroundColor: "#E8F5E9" }]}
+                  >
+                    <Text style={[styles.tagText, { color: "#1B5E20" }]}>
+                      Carbs: {Math.round(lastScannedMeal.carbs)}g
+                    </Text>
+                  </View>
+                  <View
+                    style={[styles.tagPill, { backgroundColor: "#E3F2FD" }]}
+                  >
+                    <Text style={[styles.tagText, { color: "#1565C0" }]}>
+                      Protein: {Math.round(lastScannedMeal.protein)}g
+                    </Text>
+                  </View>
+                  <View
+                    style={[styles.tagPill, { backgroundColor: "#FFF3E0" }]}
+                  >
+                    <Text style={[styles.tagText, { color: "#E65100" }]}>
+                      Fats: {Math.round(lastScannedMeal.fats)}g
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.emptyScannedCard}>
+              <MaterialCommunityIcons
+                name="camera-outline"
+                size={36}
+                color="#8C857B"
+              />
+              <Text style={styles.emptyScannedText}>No meals logged today</Text>
+              <Text style={styles.emptyScannedSubtext}>
+                Tap the camera button to scan and log your first Ghanaian meal!
+              </Text>
+            </View>
+          )}
+
+          {/* Sign Out Link */}
+          <TouchableOpacity style={styles.signOutButton} onPress={onLogout}>
+            <Text style={styles.signOutText}>Sign Out</Text>
+          </TouchableOpacity>
         </ScrollView>
       )}
 
-      {/* Camera Floating Action Button */}
+      {/* Floating Scan Camera FAB */}
       <TouchableOpacity
-        style={styles.floatingCameraButton}
+        style={styles.fabButton}
         activeOpacity={0.85}
         onPress={onNavigateToScanner}
       >
-        <MaterialCommunityIcons name="camera" size={28} color="#FFFFFF" />
+        <MaterialCommunityIcons name="camera" size={26} color="#FFFFFF" />
       </TouchableOpacity>
     </View>
   );
@@ -305,310 +368,329 @@ const HomeScreen = ({
 const styles = StyleSheet.create({
   rootContainer: {
     flex: 1,
-    backgroundColor: "transparent",
+    backgroundColor: "#F8FAFC",
   },
   container: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 120,
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === "android" ? 44 : 20,
+    paddingBottom: 100,
   },
   centeredLoader: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 40,
   },
   loaderText: {
-    marginTop: 14,
+    marginTop: 12,
     fontSize: 14,
-    color: "#475569",
+    color: "#6B5A4E",
     fontWeight: "600",
   },
-  headerSection: {
-    paddingHorizontal: 20,
-    paddingTop: 26,
-    paddingBottom: 20,
+  headerBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
   },
-  heroBadge: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 999,
-    backgroundColor: "rgba(37, 99, 235, 0.12)",
-    borderWidth: 1,
-    borderColor: "#334155",
-    marginBottom: 12,
+  userInfoRow: {
+    flexDirection: "row",
+    alignItems: "center",
   },
-  heroBadgeText: {
-    fontSize: 10,
+  avatarCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#963E00",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
+  },
+  avatarText: {
+    color: "#FFFFFF",
+    fontSize: 16,
     fontWeight: "800",
-    letterSpacing: 1.1,
-    color: "#334155B",
   },
-  welcomeText: {
-    fontSize: 29,
-    fontWeight: "900",
-    color: "#1F2937",
-    letterSpacing: -0.7,
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#4A2810",
   },
-  dateText: {
-    fontSize: 13,
-    color: "#475569",
-    fontWeight: "600",
-    marginTop: 6,
-  },
-  dashboardCard: {
-    backgroundColor: "rgba(255, 255, 255, 0.98)",
-    borderRadius: 24,
-    padding: 22,
-    marginHorizontal: 20,
+  notificationButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#FFFFFF",
+    justifyContent: "center",
+    alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgba(219, 234, 254, 0.90)",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.07,
-    shadowRadius: 22,
-    elevation: 5,
+    borderColor: "#E2E8F0",
   },
-  caloriesDisplayGroup: {
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    padding: 20,
+    marginBottom: 18,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  calorieRingContainer: {
     alignItems: "center",
     marginVertical: 12,
   },
-  bigCalorieNumber: {
-    fontSize: 58,
-    fontWeight: "900",
-    color: "#1F2937",
-    letterSpacing: -1.2,
-  },
-  bigCalorieLabel: {
-    fontSize: 11,
-    color: "#475569",
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-    marginTop: 2,
-  },
-  dividerLine: {
-    height: 1,
-    backgroundColor: "#E7E0D8",
-    width: "100%",
-    marginVertical: 16,
-  },
-  heroStatsRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 4,
-  },
-  heroStatCard: {
-    flex: 1,
-    backgroundColor: "#F8FAFC",
-    borderRadius: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    borderColor: "#DBEAFE",
+  calorieRingOuter: {
+    width: 170,
+    height: 170,
+    borderRadius: 85,
+    borderWidth: 12,
+    borderColor: "#963E00",
+    justifyContent: "center",
     alignItems: "center",
   },
-  heroStatValue: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#0F172A",
-    letterSpacing: -0.4,
+  calorieRingInner: {
+    alignItems: "center",
   },
-  heroStatLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: "#475569",
-    marginTop: 4,
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
+  calorieValueText: {
+    fontSize: 32,
+    fontWeight: "900",
+    color: "#1F2937",
   },
-  dashboardSectionTitle: {
+  calorieSubText: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#6B7280",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginBottom: 14,
+    color: "#6B5A4E",
+    marginTop: 2,
   },
-  macroListGrid: {
-    width: "100%",
+  summaryTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#1F2937",
+    marginBottom: 4,
   },
-  macroRowItem: {
+  summarySubtext: {
+    fontSize: 13,
+    color: "#6B5A4E",
+    fontWeight: "500",
+    lineHeight: 18,
     marginBottom: 16,
   },
-  macroRowHeader: {
+  macroPillRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  macroPillBox: {
+    flex: 1,
+    backgroundColor: "#EFF6FF",
+    borderRadius: 14,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  macroPillLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#475569",
+    marginBottom: 4,
+  },
+  macroPillValue: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#1F2937",
+  },
+  cardHeaderTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#1F2937",
+    marginBottom: 16,
+  },
+  goalRow: {
+    marginBottom: 14,
+  },
+  goalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 6,
   },
-  macroRowLabel: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#374151",
+  goalLabelGroup: {
+    flexDirection: "row",
+    alignItems: "center",
   },
-  macroRowValue: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#1F2937",
-  },
-  macroRemainingText: {
-    color: "#9CA3AF",
-    fontWeight: "500",
-  },
-  progressBarContainer: {
+  colorDot: {
+    width: 8,
     height: 8,
-    backgroundColor: "#E2E8F0",
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  goalLabel: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#334155",
+  },
+  goalValue: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#64748B",
+  },
+  progressBarBg: {
+    height: 8,
+    backgroundColor: "#EEF2F6",
     borderRadius: 4,
     overflow: "hidden",
   },
-  progressBar: {
+  progressBarFill: {
     height: "100%",
     borderRadius: 4,
   },
-  timelineSection: {
-    paddingHorizontal: 20,
-    marginTop: 24,
-  },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: "800",
-    color: "#1F2937",
-    marginBottom: 16,
-    letterSpacing: -0.3,
-  },
-  emptyLogsCard: {
-    backgroundColor: "#F8FAFC",
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    padding: 24,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  emptyLogsText: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#475569",
-    marginTop: 10,
-  },
-  emptyLogsSubtext: {
-    fontSize: 12,
-    color: "#94A3B8",
-    textAlign: "center",
-    marginTop: 6,
-    lineHeight: 18,
-  },
-  mealLogCard: {
-    backgroundColor: "rgba(255, 255, 255, 0.98)",
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: "rgba(219, 234, 254, 0.90)",
-    padding: 18,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.04,
-    shadowRadius: 14,
-    elevation: 2,
-  },
-  mealCardHeader: {
+  sectionHeaderRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
+    marginBottom: 12,
+    marginTop: 6,
   },
-  mealCategoryTitle: {
-    fontSize: 10,
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#1F2937",
+  },
+  viewHistoryText: {
+    fontSize: 13,
     fontWeight: "700",
-    color: "#64748B",
-    textTransform: "uppercase",
+    color: "#963E00",
+  },
+  lastScannedCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    overflow: "hidden",
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  lastScannedImageContainer: {
+    height: 180,
+    width: "100%",
+    position: "relative",
+  },
+  lastScannedImage: {
+    width: "100%",
+    height: "100%",
+  },
+  verifiedBadge: {
+    position: "absolute",
+    top: 12,
+    left: 12,
+    backgroundColor: "#1B5E20",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  verifiedBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 10,
+    fontWeight: "800",
     letterSpacing: 0.5,
   },
-  mealTimeText: {
-    fontSize: 11,
-    color: "#475569",
-    fontWeight: "500",
-    marginTop: 2,
+  lastScannedDetails: {
+    padding: 16,
   },
-  mealCalorieTag: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#0F172A",
+  lastScannedTitleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 4,
   },
-  mealNameText: {
-    fontSize: 17,
-    fontWeight: "600",
+  lastScannedName: {
+    fontSize: 18,
+    fontWeight: "800",
     color: "#1F2937",
-    marginTop: 10,
+    flex: 1,
+  },
+  calorieBadge: {
+    alignItems: "flex-end",
+  },
+  calorieBadgeNumber: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#963E00",
+  },
+  calorieBadgeLabel: {
+    fontSize: 9,
+    fontWeight: "700",
+    color: "#6B5A4E",
+  },
+  lastScannedSubtext: {
+    fontSize: 12,
+    color: "#64748B",
     marginBottom: 12,
   },
-  mealPillGroupRow: {
+  tagRow: {
     flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "wrap",
     gap: 8,
+    flexWrap: "wrap",
   },
-  macroPill: {
+  tagPill: {
     paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
-  macroPillText: {
-    fontSize: 10,
-    fontWeight: "700",
-  },
-  aiDetectedBadge: {
-    backgroundColor: "rgba(37, 99, 235, 0.10)",
-    paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "rgba(37, 99, 235, 0.16)",
-    marginLeft: "auto",
+    borderRadius: 12,
   },
-  aiBadgeText: {
-    fontSize: 10,
+  tagText: {
+    fontSize: 11,
     fontWeight: "700",
-    color: "#1D4ED8",
-    letterSpacing: 0.5,
   },
-  logoutActionContainer: {
-    paddingHorizontal: 20,
-    marginTop: 40,
+  emptyScannedCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 24,
     alignItems: "center",
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  emptyScannedText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#334155",
+    marginTop: 8,
+  },
+  emptyScannedSubtext: {
+    fontSize: 12,
+    color: "#64748B",
+    textAlign: "center",
+    marginTop: 4,
   },
   signOutButton: {
-    paddingVertical: 13,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    backgroundColor: "rgba(15, 23, 42, 0.06)",
-    borderWidth: 1,
-    borderColor: "rgba(15, 23, 42, 0.14)",
-    width: "100%",
+    paddingVertical: 12,
     alignItems: "center",
+    marginTop: 8,
   },
-  signOutButtonText: {
+  signOutText: {
     fontSize: 13,
-    fontWeight: "600",
-    color: "#0F172A",
+    fontWeight: "700",
+    color: "#963E00",
   },
-  floatingCameraButton: {
+  fabButton: {
     position: "absolute",
-    bottom: 28,
-    right: 24,
-    backgroundColor: "#0F172A",
+    bottom: 24,
+    right: 20,
+    backgroundColor: "#963E00",
     width: 56,
     height: 56,
     borderRadius: 28,
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#000",
+    shadowColor: "#963E00",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
-    elevation: 7,
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
 });
 

@@ -2,7 +2,7 @@ import { Platform } from "react-native";
 
 // If you ever deploy to a physical device running Expo Go,
 // replace the localhost/10.0.2.2 with your computer's local IPv4 Address (e.g., "192.168.1.10")
-const BASE_URL = "http://192.168.137.1:8000";
+const BASE_URL = "http://10.180.58.251:8000";
 
 const handleResponse = async (response) => {
   const data = await response.json();

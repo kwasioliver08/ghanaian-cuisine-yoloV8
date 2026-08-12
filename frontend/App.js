@@ -4,7 +4,6 @@ import SplashScreen from "./src/screens/SplashScreen";
 import AuthScreen from "./src/screens/AuthScreen";
 import OnboardingScreen from "./src/screens/OnboardingScreen";
 import MainTabNavigator from "./src/screens/MainTabNavigator";
-import AppBackground from "./src/components/AppBackground"; // Root wrapper!
 // --- 🔑 IMPORT GLOBAL NOTIFICATION INFRASTRUCTURE ---
 import NotificationToast from "./src/components/NotificationToast";
 import { useNotification } from "./src/hooks/useNotification";
@@ -104,7 +103,7 @@ export default function App() {
         return (
           <AuthScreen
             onAuthSuccess={handleAuthSuccess}
-            showNotification={showNotification} // 🔑 Injecting global trigger
+            showNotification={showNotification}
           />
         );
       case "ONBOARDING":
@@ -116,7 +115,7 @@ export default function App() {
             currentTarget={dailyTargets}
             currentDetails={onboardingDetails}
             isEditingMacroAllocation={Boolean(dailyTargets)}
-            showNotification={showNotification} // 🔑 Injecting global trigger
+            showNotification={showNotification}
           />
         );
       case "CORE_APP":
@@ -129,7 +128,7 @@ export default function App() {
             scannerResetKey={scannerResetKey}
             onEditMacroAllocation={handleEditMacroAllocation}
             onClearScanIndexes={handleClearScanIndexes}
-            showNotification={showNotification} // 🔑 Injecting global trigger
+            showNotification={showNotification}
           />
         );
       default:
@@ -143,7 +142,7 @@ export default function App() {
   };
 
   return (
-    <AppBackground>
+    <View style={styles.rootContainer}>
       <StatusBar
         barStyle="dark-content"
         backgroundColor="transparent"
@@ -156,11 +155,15 @@ export default function App() {
       <View style={styles.appWrapper}>
         <View style={styles.mainCanvas}>{renderViewLayer()}</View>
       </View>
-    </AppBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  rootContainer: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+  },
   appWrapper: {
     flex: 1,
     backgroundColor: "transparent",

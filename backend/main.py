@@ -1,11 +1,13 @@
-from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, status
-from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
-from typing import List
-from pydantic import BaseModel, EmailStr
-import models, database, auth_utils
+import os
 import uuid
 import datetime
+from typing import List, Optional
+from pydantic import BaseModel, EmailStr
+from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from sqlalchemy.orm import Session
+import models, database, auth_utils
 
 # Automatically construct schemas inside your local PostgreSQL database on startup
 models.Base.metadata.create_all(bind=database.engine)
@@ -20,6 +22,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# 🔑 CREATE & MOUNT LOCAL UPLOADS DIRECTORY FOR PUBLIC HTTP ACCESS
+os.makedirs("uploads", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
 
 # --- PYDANTIC VALIDATION SCHEMAS ---
 
@@ -43,6 +50,7 @@ class UserTargets(BaseModel):
     carbs: int
     protein: int
     fats: int
+
 
 # --- LOCAL USER AUTHENTICATION ENDPOINTS ---
 
@@ -75,6 +83,7 @@ def register_user(user_data: UserRegister, db: Session = Depends(database.get_db
     token = auth_utils.create_access_token(user_id)
     return {"token": token, "user": {"id": user_id, "full_name": new_user.full_name, "email": new_user.email}}
 
+
 @app.post("/api/auth/login")
 def login_user(credentials: UserLogin, db: Session = Depends(database.get_db)):
     # Normalize lookup email to lowercase to allow case-insensitive login
@@ -84,14 +93,36 @@ def login_user(credentials: UserLogin, db: Session = Depends(database.get_db)):
     if not user or not auth_utils.verify_password(credentials.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid email or password.")
     
+    # 🔑 Query the user's saved nutritional targets and physical metrics
+    targets = db.query(models.NutritionalTargets).filter(
+        models.NutritionalTargets.user_id == user.id
+    ).first()
+
     token = auth_utils.create_access_token(user.id)
-    return {"token": token, "user": {"id": user.id, "full_name": user.full_name, "email": user.email}}
+    
+    return {
+        "token": token,
+        "user": {
+            "id": user.id,
+            "full_name": user.full_name,
+            "email": user.email,
+            "gender": targets.gender if targets else None,
+            "age": targets.age if targets else None,
+            "weight": targets.weight if targets else None,
+            "height": targets.height if targets else None,
+            "calories": targets.calories if targets else 2150,
+            "carbs": targets.carbs if targets else 295,
+            "protein": targets.protein if targets else 108,
+            "fats": targets.fats if targets else 60,
+        }
+    }
+
 
 # --- USER & TARGET METRICS ENDPOINTS ---
 
 @app.post("/api/user/targets")
 def save_targets(
-    targets_data: UserTargets,  # Now accepts the data securely through a validated JSON body payload
+    targets_data: UserTargets,
     db: Session = Depends(database.get_db)
 ):
     # Search if targets already exist for this user_id
@@ -99,7 +130,6 @@ def save_targets(
         models.NutritionalTargets.user_id == targets_data.user_id
     ).first()
     
-    # Convert validated pydantic data into a standard Python dictionary
     payload = targets_data.model_dump()
     
     if db_targets:
@@ -113,6 +143,7 @@ def save_targets(
         
     db.commit()
     return {"status": "success"}
+
 
 # --- MEAL LOGGING ENDPOINTS ---
 
@@ -131,12 +162,14 @@ def get_todays_meals(user_id: str, db: Session = Depends(database.get_db)):
         models.MealLog.logged_at < today_end
     ).order_by(models.MealLog.logged_at.desc()).all()
 
+
 @app.get("/api/meals/history/{user_id}")
 def get_user_meals_history(user_id: str, db: Session = Depends(database.get_db)):
     """
     Fetches the full lifetime historical ledger of logged meals for the History profile screen.
     """
     return db.query(models.MealLog).filter(models.MealLog.user_id == user_id).order_by(models.MealLog.logged_at.desc()).all()
+
 
 @app.post("/api/meals")
 def log_meal(
@@ -148,6 +181,7 @@ def log_meal(
     protein: int,
     fats: int,
     is_ai: bool = False,
+    image_url: Optional[str] = None,  # 🔑 Added optional image URL parameter
     db: Session = Depends(database.get_db)
 ):
     new_meal = models.MealLog(
@@ -159,44 +193,63 @@ def log_meal(
         carbs=carbs,
         protein=protein,
         fats=fats,
-        is_ai_detected=is_ai
+        is_ai_detected=is_ai,
+        image_url=image_url  # 🔑 Saved to DB
     )
     db.add(new_meal)
     db.commit()
     return {"status": "success", "meal_id": new_meal.id}
+
 
 # --- COMPUTER VISION WORKSPACE HOOK ---
 
 @app.post("/api/scan")
 async def scan_plate_image(file: UploadFile = File(...)):
     """
-    Intakes raw phone viewfinders snapshots and maps localized items.
+    Intakes raw phone viewfinders snapshots, saves the file to local disk,
+    and returns localized item detections alongside the hosted image URL.
     """
     try:
-        # Read the raw uploaded byte file from the device
+        # Generate a unique filename to prevent overwriting existing uploads
+        file_filename = f"{uuid.uuid4().hex}_{file.filename}"
+        file_path = os.path.join("uploads", file_filename)
+        
+        # Read uploaded image bytes and save file to local disk
         contents = await file.read()
-        
-        # --- FUTURE YOLO PRODUCTION HOOK ---
-        # from ultralytics import YOLO
-        # model = YOLO("../model_weights/best.pt")
-        # results = model(image_bytes)
-        # ------------------------------------
-        
-        # We match your exact frontend canvas size bounds to display bounding boxes cleanly during your local testing!
+        with open(file_path, "wb") as f:
+            f.write(contents)
+            
+        # Public HTTP URL accessible by React Native
+        image_url = f"http://192.168.137.1:8000/uploads/{file_filename}"
+
         CANVAS_SIZE = 350.0  
         return {
+            "image_url": image_url,  # 🔑 Sent back to React Native frontend
             "predictions": [
                 {
                     "class": "waakye",
                     "confidence": 0.94,
-                    "box": {"x": CANVAS_SIZE * 0.12, "y": CANVAS_SIZE * 0.2, "w": CANVAS_SIZE * 0.55, "h": CANVAS_SIZE * 0.6}
+                    "box": {
+                        "x": CANVAS_SIZE * 0.12, 
+                        "y": CANVAS_SIZE * 0.2, 
+                        "w": CANVAS_SIZE * 0.55, 
+                        "h": CANVAS_SIZE * 0.6
+                    }
                 },
                 {
                     "class": "plantain",
                     "confidence": 0.88,
-                    "box": {"x": CANVAS_SIZE * 0.65, "y": CANVAS_SIZE * 0.35, "w": CANVAS_SIZE * 0.28, "h": CANVAS_SIZE * 0.4}
+                    "box": {
+                        "x": CANVAS_SIZE * 0.65, 
+                        "y": CANVAS_SIZE * 0.35, 
+                        "w": CANVAS_SIZE * 0.28, 
+                        "h": CANVAS_SIZE * 0.4
+                    }
                 }
             ]
         }
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=str(e)
+        )

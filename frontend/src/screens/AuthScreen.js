@@ -8,15 +8,15 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Image,
+  ImageBackground,
 } from "react-native";
 import {
   isValidEmail,
   isValidPassword,
   passwordsMatch,
 } from "../utils/validation";
-// --- IMPORT EXPO VECTOR ICONS FOR THE EYE ---
 import { Feather } from "@expo/vector-icons";
-// --- IMPORT THE LIVE API HELPER ---
 import { api } from "../utils/api";
 
 const AuthScreen = ({ onAuthSuccess, showNotification }) => {
@@ -25,10 +25,11 @@ const AuthScreen = ({ onAuthSuccess, showNotification }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [agreeTerms, setAgreeTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
-  // --- PASSWORD VISIBILITY TOGGLE STATES ---
+  // Password visibility toggle states
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -42,6 +43,9 @@ const AuthScreen = ({ onAuthSuccess, showNotification }) => {
       newErrors.password = passwordValidation.message;
     if (!passwordsMatch(password, confirmPassword))
       newErrors.confirmPassword = "Passwords must match";
+    if (!agreeTerms)
+      newErrors.agreeTerms = "You must agree to the Terms and Conditions";
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -56,7 +60,7 @@ const AuthScreen = ({ onAuthSuccess, showNotification }) => {
 
   const handleSignUp = async () => {
     if (!validateSignUp()) return;
-    loading(true);
+    setLoading(true);
     try {
       const response = await api.register(
         fullName.trim(),
@@ -74,7 +78,6 @@ const AuthScreen = ({ onAuthSuccess, showNotification }) => {
 
       if (onAuthSuccess) onAuthSuccess(userPayload);
     } catch (error) {
-      // 🔑 FIXED: Custom cross-platform global notification toast replacement
       if (showNotification) {
         showNotification(
           error.message || "An error occurred during sign up",
@@ -98,11 +101,24 @@ const AuthScreen = ({ onAuthSuccess, showNotification }) => {
         email: response.user.email,
         token: response.token,
         isNewUser: false,
+
+        onboardingDetails: {
+          gender: response.user.gender,
+          age: response.user.age,
+          weight: response.user.weight,
+          height: response.user.height,
+        },
+
+        dailyTargets: {
+          calories: response.user.calories,
+          carbs: response.user.carbs,
+          protein: response.user.protein,
+          fats: response.user.fats,
+        },
       };
 
       if (onAuthSuccess) onAuthSuccess(userPayload);
     } catch (error) {
-      // 🔑 FIXED: Custom cross-platform global notification toast replacement
       if (showNotification) {
         showNotification(
           error.message || "An error occurred during sign in",
@@ -125,42 +141,74 @@ const AuthScreen = ({ onAuthSuccess, showNotification }) => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.authCard}>
-          {/* Header */}
-          <View style={styles.headerSection}>
-            <View style={styles.heroBadge}>
-              <Text style={styles.heroBadgeText}>SCAN + TRACK</Text>
-            </View>
-            <Text style={styles.headerTitle}>Ghanaian Cuisine</Text>
-            <Text style={styles.headerSubtitle}>
-              {isSignUp
-                ? "Create your account to unlock meal scanning and daily targets."
-                : "Sign in to continue tracking meals and nutrition."}
-            </Text>
-            <View style={styles.featureRow}>
-              <View style={styles.featureChip}>
-                <Text style={styles.featureChipText}>Meal scan</Text>
-              </View>
-              <View style={styles.featureChip}>
-                <Text style={styles.featureChipText}>Macro goals</Text>
-              </View>
-              <View style={styles.featureChip}>
-                <Text style={styles.featureChipText}>Daily log</Text>
-              </View>
-            </View>
+        <View style={styles.screenBody}>
+          {/* Top Badge Icon (Switches dynamically between Sign In and Sign Up) */}
+          <View style={styles.badgeContainer}>
+            <Image
+              source={
+                isSignUp
+                  ? require("../../assets/create_account_icon.png")
+                  : require("../../assets/sign_in.png")
+              }
+              style={styles.badgeImage}
+            />
           </View>
 
-          {/* Form Container */}
+          {/* Header Section */}
+          <Text style={styles.headerTitle}>
+            {isSignUp ? "Create Account" : "Akwaaba"}
+          </Text>
+          <Text style={styles.headerSubtitle}>
+            {isSignUp
+              ? "Join our community and track your local meals effortlessly."
+              : "Your Ghanaian Cuisine"}
+          </Text>
+
+          {/* Hero Banner Image */}
+          <View style={styles.bannerContainer}>
+            {isSignUp ? (
+              <Image
+                source={require("../../assets/create_account_banner.png")}
+                style={styles.bannerImagePlain}
+                resizeMode="cover"
+              />
+            ) : (
+              <ImageBackground
+                source={require("../../assets/sign_in_banner.jpg")}
+                style={styles.bannerImageBg}
+                imageStyle={{ borderRadius: 16 }}
+              >
+                <View style={styles.bannerOverlay}>
+                  <Text style={styles.bannerOverlayText}>
+                    Discover the health in your heritage
+                  </Text>
+                </View>
+              </ImageBackground>
+            )}
+          </View>
+
+          {/* Form Fields */}
           <View style={styles.formContainer}>
-            {/* Full Name Field (Sign Up only) */}
+            {/* Full Name (Sign Up only) */}
             {isSignUp && (
-              <>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Full Name</Text>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Full Name</Text>
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    errors.fullName && styles.inputError,
+                  ]}
+                >
+                  <Feather
+                    name="user"
+                    size={18}
+                    color="#8C857B"
+                    style={styles.leftInputIcon}
+                  />
                   <TextInput
-                    style={[styles.input, errors.fullName && styles.inputError]}
-                    placeholder="Enter your full name"
-                    placeholderTextColor="#A0AEC0"
+                    style={styles.input}
+                    placeholder="Kofi Mensah"
+                    placeholderTextColor="#8C857B"
                     value={fullName}
                     onChangeText={(text) => {
                       setFullName(text);
@@ -173,17 +221,27 @@ const AuthScreen = ({ onAuthSuccess, showNotification }) => {
                 {errors.fullName && (
                   <Text style={styles.errorText}>{errors.fullName}</Text>
                 )}
-              </>
+              </View>
             )}
 
             {/* Email Field */}
-            <>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Email Address</Text>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Email Address</Text>
+              <View
+                style={[styles.inputWrapper, errors.email && styles.inputError]}
+              >
+                <Feather
+                  name="mail"
+                  size={18}
+                  color="#8C857B"
+                  style={styles.leftInputIcon}
+                />
                 <TextInput
-                  style={[styles.input, errors.email && styles.inputError]}
-                  placeholder="Enter your email"
-                  placeholderTextColor="#A0AEC0"
+                  style={styles.input}
+                  placeholder={
+                    isSignUp ? "kofi.mensah@example.gh" : "kofi@example.com"
+                  }
+                  placeholderTextColor="#8C857B"
                   value={email}
                   onChangeText={(text) => {
                     setEmail(text);
@@ -197,95 +255,120 @@ const AuthScreen = ({ onAuthSuccess, showNotification }) => {
               {errors.email && (
                 <Text style={styles.errorText}>{errors.email}</Text>
               )}
-            </>
+            </View>
 
             {/* Password Field */}
-            <>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Password</Text>
-                <View
-                  style={[
-                    styles.passwordWrapper,
-                    errors.password && styles.inputError,
-                  ]}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Password</Text>
+              <View
+                style={[
+                  styles.inputWrapper,
+                  errors.password && styles.inputError,
+                ]}
+              >
+                <Feather
+                  name="lock"
+                  size={18}
+                  color="#8C857B"
+                  style={styles.leftInputIcon}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="••••••••"
+                  placeholderTextColor="#8C857B"
+                  value={password}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    if (errors.password)
+                      setErrors({ ...errors, password: null });
+                  }}
+                  secureTextEntry={!showPassword}
+                  editable={!loading}
+                />
+                <TouchableOpacity
+                  style={styles.eyeIconButton}
+                  onPress={() => setShowPassword(!showPassword)}
+                  activeOpacity={0.6}
                 >
-                  <TextInput
-                    style={styles.passwordInput}
-                    placeholder="Enter your password"
-                    placeholderTextColor="#A0AEC0"
-                    value={password}
-                    onChangeText={(text) => {
-                      setPassword(text);
-                      if (errors.password)
-                        setErrors({ ...errors, password: null });
-                    }}
-                    secureTextEntry={!showPassword}
-                    editable={!loading}
+                  <Feather
+                    name={showPassword ? "eye" : "eye-off"}
+                    size={18}
+                    color="#8C857B"
                   />
-                  <TouchableOpacity
-                    style={styles.eyeIconButton}
-                    onPress={() => setShowPassword(!showPassword)}
-                    activeOpacity={0.6}
-                  >
-                    <Feather
-                      name={showPassword ? "eye" : "eye-off"}
-                      size={18}
-                      color="#718096"
-                    />
-                  </TouchableOpacity>
-                </View>
+                </TouchableOpacity>
               </View>
               {errors.password && (
                 <Text style={styles.errorText}>{errors.password}</Text>
               )}
-            </>
+            </View>
 
-            {/* Confirm Password Field (Sign Up only) */}
+            {/* Confirm Password (Sign Up only) */}
             {isSignUp && (
-              <>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Confirm Password</Text>
-                  <View
-                    style={[
-                      styles.passwordWrapper,
-                      errors.confirmPassword && styles.inputError,
-                    ]}
-                  >
-                    <TextInput
-                      style={styles.passwordInput}
-                      placeholder="Confirm your password"
-                      placeholderTextColor="#A0AEC0"
-                      value={confirmPassword}
-                      onChangeText={(text) => {
-                        setConfirmPassword(text);
-                        if (errors.confirmPassword)
-                          setErrors({ ...errors, confirmPassword: null });
-                      }}
-                      secureTextEntry={!showConfirmPassword}
-                      editable={!loading}
-                    />
-                    <TouchableOpacity
-                      style={styles.eyeIconButton}
-                      onPress={() =>
-                        setShowConfirmPassword(!showConfirmPassword)
-                      }
-                      activeOpacity={0.6}
-                    >
-                      <Feather
-                        name={showConfirmPassword ? "eye" : "eye-off"}
-                        size={18}
-                        color="#718096"
-                      />
-                    </TouchableOpacity>
-                  </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Confirm Password</Text>
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    errors.confirmPassword && styles.inputError,
+                  ]}
+                >
+                  <Feather
+                    name="rotate-ccw"
+                    size={18}
+                    color="#8C857B"
+                    style={styles.leftInputIcon}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="••••••••"
+                    placeholderTextColor="#8C857B"
+                    value={confirmPassword}
+                    onChangeText={(text) => {
+                      setConfirmPassword(text);
+                      if (errors.confirmPassword)
+                        setErrors({ ...errors, confirmPassword: null });
+                    }}
+                    secureTextEntry={!showConfirmPassword}
+                    editable={!loading}
+                  />
                 </View>
                 {errors.confirmPassword && (
                   <Text style={styles.errorText}>{errors.confirmPassword}</Text>
                 )}
-              </>
+              </View>
             )}
 
-            {/* Submit Button */}
+            {/* Terms and Conditions Checkbox (Sign Up only) */}
+            {isSignUp && (
+              <View style={styles.termsRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.checkbox,
+                    agreeTerms && styles.checkboxChecked,
+                  ]}
+                  onPress={() => setAgreeTerms(!agreeTerms)}
+                  activeOpacity={0.7}
+                >
+                  {agreeTerms && (
+                    <Feather name="check" size={12} color="#FFFFFF" />
+                  )}
+                </TouchableOpacity>
+                <Text style={styles.termsText}>
+                  I agree to the{" "}
+                  <Text style={styles.termsLink}>Terms and Conditions</Text> and{" "}
+                  <Text style={styles.termsLink}>Privacy Policy</Text>.
+                </Text>
+              </View>
+            )}
+
+            {/* Forgot Password Link (Sign In only) */}
+            {!isSignUp && (
+              <TouchableOpacity style={styles.forgotPasswordContainer}>
+                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Main Action Button */}
             <TouchableOpacity
               style={[
                 styles.submitButton,
@@ -293,6 +376,7 @@ const AuthScreen = ({ onAuthSuccess, showNotification }) => {
               ]}
               onPress={handleSubmit}
               disabled={loading}
+              activeOpacity={0.8}
             >
               <Text style={styles.submitButtonText}>
                 {loading
@@ -301,9 +385,17 @@ const AuthScreen = ({ onAuthSuccess, showNotification }) => {
                     ? "Create Account"
                     : "Sign In"}
               </Text>
+              {!loading && (
+                <Feather
+                  name="arrow-right"
+                  size={18}
+                  color="#FFFFFF"
+                  style={{ marginLeft: 8 }}
+                />
+              )}
             </TouchableOpacity>
 
-            {/* Toggle Sign In / Sign Up */}
+            {/* Toggle Sign In / Sign Up Link */}
             <View style={styles.toggleContainer}>
               <Text style={styles.toggleText}>
                 {isSignUp
@@ -334,167 +426,194 @@ const AuthScreen = ({ onAuthSuccess, showNotification }) => {
 const styles = StyleSheet.create({
   keyboardContainer: {
     flex: 1,
+    backgroundColor: "#F8FAFC",
   },
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 20,
-    paddingVertical: 24,
-    paddingBottom: 32,
+    paddingVertical: 36,
     justifyContent: "center",
   },
-  authCard: {
-    backgroundColor: "rgba(255, 255, 255, 0.97)",
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "rgba(219, 234, 254, 0.95)",
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.05,
-    shadowRadius: 18,
-    elevation: 4,
+  screenBody: {
+    width: "100%",
+    alignItems: "center",
   },
-  headerSection: {
-    marginBottom: 24,
-    marginTop: 6,
-  },
-  heroBadge: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 999,
-    backgroundColor: "rgba(15, 23, 42, 0.08)",
+  badgeContainer: {
     marginBottom: 12,
+    alignItems: "center",
   },
-  heroBadgeText: {
-    fontSize: 10,
-    fontWeight: "800",
-    letterSpacing: 1,
-    color: "#0F172A",
+  badgeImage: {
+    width: 60,
+    height: 60,
+    resizeMode: "contain",
   },
   headerTitle: {
-    fontSize: 29,
+    fontSize: 28,
     fontWeight: "800",
-    color: "#1F2937",
-    marginBottom: 8,
+    color: "#0F172A",
+    textAlign: "center",
+    marginBottom: 6,
   },
   headerSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: "#475569",
     fontWeight: "500",
-    lineHeight: 20,
+    textAlign: "center",
+    paddingHorizontal: 20,
+    marginBottom: 20,
+    lineHeight: 18,
   },
-  featureRow: {
-    flexDirection: "row",
-    gap: 8,
-    flexWrap: "wrap",
-    marginTop: 14,
+  bannerContainer: {
+    height: 140,
+    width: "100%",
+    marginBottom: 24,
+    borderRadius: 16,
+    overflow: "hidden",
   },
-  featureChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: "#F8FAFC",
-    borderWidth: 1,
-    borderColor: "#DBEAFE",
+  bannerImagePlain: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 16,
   },
-  featureChipText: {
-    fontSize: 10,
+  bannerImageBg: {
+    flex: 1,
+    justifyContent: "flex-end",
+  },
+  bannerOverlay: {
+    backgroundColor: "rgba(0, 0, 0, 0.35)",
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+  },
+  bannerOverlayText: {
+    color: "#FFFFFF",
+    fontSize: 13,
     fontWeight: "700",
-    color: "#475569",
   },
   formContainer: {
-    flex: 1,
+    width: "100%",
   },
   inputGroup: {
-    marginBottom: 14,
+    marginBottom: 16,
   },
   label: {
     fontSize: 12,
-    fontWeight: "600",
-    color: "#475569",
+    fontWeight: "700",
+    color: "#334155",
     marginBottom: 8,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
   },
-  input: {
-    height: 48,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#DBEAFE",
-    backgroundColor: "rgba(255, 255, 255, 0.98)",
-    fontSize: 15,
-    color: "#1F2937",
-  },
-  passwordWrapper: {
+  inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    height: 48,
+    height: 50,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#DBEAFE",
-    backgroundColor: "rgba(255, 255, 255, 0.98)",
-    overflow: "hidden",
+    borderColor: "#E2E8F0",
+    backgroundColor: "#EFF6FF",
+    paddingHorizontal: 14,
   },
-  passwordInput: {
+  leftInputIcon: {
+    marginRight: 10,
+  },
+  input: {
     flex: 1,
     height: "100%",
-    paddingHorizontal: 16,
-    fontSize: 15,
-    color: "#1F2937",
+    fontSize: 14,
+    color: "#0F172A",
+    fontWeight: "500",
   },
   eyeIconButton: {
-    height: "100%",
-    paddingHorizontal: 16,
+    paddingLeft: 10,
     justifyContent: "center",
     alignItems: "center",
   },
   inputError: {
-    borderColor: "#F56565",
-    backgroundColor: "#FFF5F5",
+    borderColor: "#EF4444",
+    backgroundColor: "#FEF2F2",
   },
   errorText: {
     fontSize: 12,
-    color: "#C53030",
-    marginBottom: 12,
-    marginTop: -4,
+    color: "#EF4444",
+    marginTop: 4,
     fontWeight: "500",
   },
-  submitButton: {
-    paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: "#0F172A",
+  termsRow: {
+    flexDirection: "row",
     alignItems: "center",
-    marginTop: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 14,
-    elevation: 4,
+    marginBottom: 20,
+    paddingRight: 10,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: "#CBD5E1",
+    backgroundColor: "#FFFFFF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
+  },
+  checkboxChecked: {
+    backgroundColor: "#963E00",
+    borderColor: "#963E00",
+  },
+  termsText: {
+    fontSize: 12,
+    color: "#475569",
+    flex: 1,
+    lineHeight: 16,
+  },
+  termsLink: {
+    color: "#963E00",
+    fontWeight: "700",
+  },
+  forgotPasswordContainer: {
+    alignSelf: "flex-end",
+    marginBottom: 20,
+    marginTop: -4,
+  },
+  forgotPasswordText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#963E00",
+  },
+  submitButton: {
+    height: 52,
+    borderRadius: 14,
+    backgroundColor: "#963E00",
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#963E00",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 3,
+    marginBottom: 20,
   },
   submitButtonDisabled: {
-    opacity: 0.6,
+    opacity: 0.65,
   },
   submitButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
+    fontSize: 16,
+    fontWeight: "700",
     color: "#FFFFFF",
   },
   toggleContainer: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 20,
   },
   toggleText: {
     fontSize: 13,
     color: "#475569",
-    fontWeight: "400",
+    fontWeight: "500",
   },
   toggleLink: {
     fontSize: 13,
-    color: "#0F172A",
+    color: "#963E00",
     fontWeight: "700",
   },
 });
